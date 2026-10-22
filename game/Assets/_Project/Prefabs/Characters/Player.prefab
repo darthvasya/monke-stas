@@ -1,0 +1,392 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6500951373513902466
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2543524242521740546}
+  - component: {fileID: 1377818160564706281}
+  - component: {fileID: 7622454464517087117}
+  - component: {fileID: 6244526679792914177}
+  m_Layer: 0
+  m_Name: Cap
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2543524242521740546
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6500951373513902466}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1503895579960083359}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &1377818160564706281
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6500951373513902466}
+  m_Mesh: {fileID: 0}
+--- !u!23 &7622454464517087117
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6500951373513902466}
+  m_Enabled: 0
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 2b6ea3a9e6cf0f74abff0928a246e5ae, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &6244526679792914177
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6500951373513902466}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35fe86d9d203ff14f87c017fd3fe49a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Stasik.Characters::Stasik.Characters.HeadCap
+  _forward:
+    _mesh: {fileID: 4300000, guid: 8a0a21a46dc378c48bd6101dd2c2b1b4, type: 2}
+    _localPosition: {x: 0.01900917, y: 0.21146482, z: -0.07934447}
+    _localRotation: {x: -0.13049154, y: -0.022879392, z: -0.0030121042, w: 0.991181}
+    _radii: {x: 0.13808195, y: 0.1132272, z: 0.17316917}
+  _backward:
+    _mesh: {fileID: 4300000, guid: ca702ccc7babc274e961bbf4f54dcccd, type: 2}
+    _localPosition: {x: 0.019009171, y: 0.21146482, z: -0.07934447}
+    _localRotation: {x: 0.0030121042, y: 0.991181, z: -0.13049154, w: 0.022879392}
+    _radii: {x: 0.13808195, y: 0.1132272, z: 0.17316917}
+  _style: 0
+  _bandMargin: 0.02
+  _putOnTime: 1.5
+  _takeOffTime: 1.4
+  _turnTime: 1.2
+  _lift: 0.14
+  _turnHop: 0.04
+--- !u!1 &8941637716919440422
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2149832513231026168}
+  - component: {fileID: 705601121431961472}
+  - component: {fileID: 8403169077209047836}
+  - component: {fileID: 2693435295206295474}
+  - component: {fileID: 7544013123103585982}
+  - component: {fileID: 197052797894700363}
+  - component: {fileID: 575351277114508682}
+  m_Layer: 0
+  m_Name: Player
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2149832513231026168
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8941637716919440422}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 7890222802265973488}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!143 &705601121431961472
+CharacterController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8941637716919440422}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Height: 1.25
+  m_Radius: 0.34
+  m_SlopeLimit: 45
+  m_StepOffset: 0.25
+  m_SkinWidth: 0.02
+  m_MinMoveDistance: 0.001
+  m_Center: {x: 0, y: 0.645, z: 0}
+--- !u!114 &8403169077209047836
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8941637716919440422}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f4d68bf6dd8e294b973984d970ec3eb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Stasik.Player::Stasik.Player.PlayerInput
+--- !u!114 &2693435295206295474
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8941637716919440422}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9edba59d0a88775438214834386a646b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Stasik.Player::Stasik.Player.PlayerMovement
+  _camera: {fileID: 0}
+  _walkSpeed: 1.0236971
+  _runSpeed: 2.7325673
+  _acceleration: 8
+  _deceleration: 10
+  _turnSpeed: 720
+  _gravity: -20
+--- !u!114 &7544013123103585982
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8941637716919440422}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d54f1725e02e4b240b91c18f55653d3f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Stasik.Player::Stasik.Player.PlayerAnimator
+  _animator: {fileID: 4296327396627183754}
+  _damping: 0.1
+--- !u!114 &197052797894700363
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8941637716919440422}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52c78243d3bd7c6448740c9d702fd576, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Stasik.Characters::Stasik.Characters.FurShells
+  _source: {fileID: 1902734916923356401}
+  _furMaterial: {fileID: 2100000, guid: 25b1dd74cb8395e44bc1ec8f7079eb10, type: 2}
+  _shellCount: 24
+--- !u!114 &575351277114508682
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8941637716919440422}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d69b66eab5b8e0041a960281687a4829, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Stasik.Player::Stasik.Player.PlayerCap
+  _cap: {fileID: 6244526679792914177}
+--- !u!1001 &7707078057768338715
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2149832513231026168}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9999999
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.9999999
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.9999999
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.005757231
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      propertyPath: m_Name
+      value: Model
+      objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: a73595c2d8df36e42a61524e0cc80153, type: 2}
+    - target: {fileID: 5866666021909216657, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      propertyPath: m_CullingMode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8111781155169087978, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      propertyPath: m_UpdateWhenOffscreen
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8111781155169087978, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 20a03f95a0f8f52499c9c99c83779649, type: 2}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: -131761456609737084, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2543524242521740546}
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5406990066070189118}
+  m_SourcePrefab: {fileID: 100100000, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+--- !u!4 &1503895579960083359 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -131761456609737084, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+  m_PrefabInstance: {fileID: 7707078057768338715}
+  m_PrefabAsset: {fileID: 0}
+--- !u!137 &1902734916923356401 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 8111781155169087978, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+  m_PrefabInstance: {fileID: 7707078057768338715}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &4296327396627183754 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+  m_PrefabInstance: {fileID: 7707078057768338715}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &7364620662091053130 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+  m_PrefabInstance: {fileID: 7707078057768338715}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &5406990066070189118
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7364620662091053130}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dbef4b170062c2f419e37f4684035122, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Stasik.Characters::Stasik.Characters.CapHandIK
+  _cap: {fileID: 6244526679792914177}
+  _rotationWeight: 0.7
+--- !u!4 &7890222802265973488 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 64e6ed1cf312fa247ba37ac64a25ab16, type: 3}
+  m_PrefabInstance: {fileID: 7707078057768338715}
+  m_PrefabAsset: {fileID: 0}

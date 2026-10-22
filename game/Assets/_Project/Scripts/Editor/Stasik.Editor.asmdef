@@ -1,0 +1,19 @@
+{
+    "name": "Stasik.Editor",
+    "rootNamespace": "Stasik.EditorTools",
+    "references": [
+        "Stasik.Characters",
+        "Stasik.Player"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

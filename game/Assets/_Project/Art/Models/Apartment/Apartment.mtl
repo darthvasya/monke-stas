@@ -1,0 +1,28 @@
+newmtl Wall
+Kd 0.910 0.894 0.863
+d 1.0
+
+newmtl Floor
+Kd 0.722 0.604 0.455
+d 1.0
+
+newmtl Terrace
+Kd 0.549 0.549 0.549
+d 1.0
+
+newmtl Tiles
+Kd 0.941 0.941 0.941
+d 1.0
+
+newmtl Glass
+Kd 0.624 0.780 0.851
+d 0.3
+
+newmtl Frame
+Kd 0.169 0.169 0.169
+d 1.0
+
+newmtl WindowFrame
+Kd 0.957 0.949 0.933
+d 1.0
+
