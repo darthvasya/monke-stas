@@ -459,7 +459,8 @@ namespace Stasik.EditorTools
             ["borschPot"] = new[] // Unity cylinder is 2 units tall: scale.y is half the height
             {
                 new Part(PrimitiveType.Cylinder, new Vector3(0f, 0.09f, 0f), new Vector3(0.26f, 0.09f, 0.26f), "PotMetal"),
-                new Part(PrimitiveType.Cylinder, new Vector3(0f, 0.176f, 0f), new Vector3(0.24f, 0.004f, 0.24f), "Borsch"),
+                // Full to the brim: the top stands 4 mm over the pot's (level with it, they z-fought and flickered).
+                new Part(PrimitiveType.Cylinder, new Vector3(0f, 0.18f, 0f), new Vector3(0.24f, 0.004f, 0.24f), "Borsch"),
                 new Part(PrimitiveType.Cube, new Vector3(-0.15f, 0.15f, 0f), new Vector3(0.05f, 0.02f, 0.03f), "PotMetal"),
                 new Part(PrimitiveType.Cube, new Vector3(0.15f, 0.15f, 0f), new Vector3(0.05f, 0.02f, 0.03f), "PotMetal"),
             },
