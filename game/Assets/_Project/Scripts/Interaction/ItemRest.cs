@@ -12,6 +12,8 @@ namespace Stasik.Interaction
         PutOn,
         TakeOff,
         Turn,
+        Open,
+        Close,
     }
 
     /// <summary>A pose relative to an object, editable in the inspector.</summary>

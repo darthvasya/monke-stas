@@ -96,7 +96,15 @@ namespace Stasik.Player
         /// </summary>
         private float CastDistance(Vector3 origin, Vector3 direction, float maxDistance)
         {
-            var hits = Physics.SphereCastAll(origin, _collisionRadius, direction, maxDistance, _collisionMask,
+            var nearest = CastDistance(origin, direction, maxDistance, _collisionRadius);
+            // Grazing a door jamb or an open door at the start would pull the camera into his head; a thinner cast still
+            // keeps it (and its near plane) out of walls.
+            return nearest > 0f ? nearest : CastDistance(origin, direction, maxDistance, _collisionRadius * 0.5f);
+        }
+
+        private float CastDistance(Vector3 origin, Vector3 direction, float maxDistance, float radius)
+        {
+            var hits = Physics.SphereCastAll(origin, radius, direction, maxDistance, _collisionMask,
                 QueryTriggerInteraction.Ignore);
             var nearest = maxDistance;
             foreach (var hit in hits)

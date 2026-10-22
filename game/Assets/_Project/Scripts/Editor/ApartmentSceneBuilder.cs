@@ -209,8 +209,8 @@ namespace Stasik.EditorTools
             // Overview camera above the flat (no ceiling yet). The game camera comes with the player.
             var cam = Camera.main;
             cam.name = "OverviewCamera";
-            cam.transform.position = new Vector3(5.5f, 14f, -3f);
-            cam.transform.LookAt(new Vector3(5.5f, 0f, 7.5f));
+            cam.transform.position = new Vector3(6.9f, 17.5f, -3.75f);
+            cam.transform.LookAt(new Vector3(6.9f, 0f, 9.4f));
             cam.fieldOfView = 50f;
 
             ApartmentFurniture.Place();
@@ -236,7 +236,7 @@ namespace Stasik.EditorTools
                 return;
 
             var player = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
-            player.transform.SetPositionAndRotation(new Vector3(6.6f, 0f, 5.2f), Quaternion.Euler(0f, 180f, 0f));
+            player.transform.SetPositionAndRotation(new Vector3(8.25f, 0f, 6.5f), Quaternion.Euler(0f, 180f, 0f));
 
             overview.tag = "Untagged";
             overview.enabled = false;

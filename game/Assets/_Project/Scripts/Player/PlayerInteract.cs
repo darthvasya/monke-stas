@@ -6,9 +6,9 @@ namespace Stasik.Player
 {
     /// <summary>
     /// The player's hands on the world. E acts on the best target in front (take an item, hang it on a hook, put it on a
-    /// table or down in front); if it's out of arm's reach he walks up to it first and turns to it. C is the cap: in
-    /// hand -> put on peak forward -> turn it round -> take it off into the hand. Moving the stick cancels walking up;
-    /// presses while the hand is busy are ignored.
+    /// table or down in front, open or close a door by the handle); if it's out of arm's reach he walks up to it first
+    /// and turns to it. C is the cap: in hand -> put on peak forward -> turn it round -> take it off into the hand.
+    /// Moving the stick cancels walking up; presses while the hand is busy are ignored.
     /// </summary>
     [RequireComponent(typeof(PlayerInput), typeof(PlayerMovement))]
     public class PlayerInteract : MonoBehaviour
@@ -74,6 +74,19 @@ namespace Stasik.Player
 
         private void Act()
         {
+            if (Target is Door door)
+            {
+                // Hand on the handle; with something in the hand he just nudges it.
+                var origin = transform.position;
+                Reach(door, door.FocusPoint, () =>
+                {
+                    var grip = new HandOnDoor(door, transform, () => ToggleDoor(door, origin));
+                    if (_hand.Held != null || !_hand.TryRunCustom(grip))
+                        ToggleDoor(door, origin);
+                });
+                return;
+            }
+
             var held = _hand.Held;
             if (held != null)
             {
@@ -86,6 +99,24 @@ namespace Stasik.Player
             {
                 Reach(item, ActionPoint(item, null), () => _hand.TryPickUp(item));
             }
+        }
+
+        /// <summary>
+        /// Opens or closes the door; if it would hit him (a pull), he steps out of its way, back to the side he came
+        /// from (<paramref name="origin"/>) if he can. True = stepping out.
+        /// </summary>
+        private bool ToggleDoor(Door door, Vector3 origin)
+        {
+            var root = transform.position;
+            door.Toggle(root);
+            var body = GetComponent<CharacterController>();
+            if (!door.WillHit(body))
+                return false;
+            if (!door.TryFindClearSpot(root, origin, body.radius, transform, out var spot)
+                && !door.TryFindClearSpot(root, root, body.radius, transform, out spot))
+                return false;
+            _movement.Approach(spot, door.FocusPoint - spot, _ => { });
+            return true;
         }
 
         /// <summary>The cap in the hand, or the one on his head.</summary>

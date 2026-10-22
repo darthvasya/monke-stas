@@ -44,90 +44,90 @@ namespace Stasik.EditorTools
         {
             ("Kitchen", new[]
             {
-                new Item("Fridge", "kitchenFridgeLarge", 8.34f, 9.08f, 90f),
-                new Item("Stove", "kitchenStove", 8.30f, 8.13f, 90f), // oven is built into the stove, no microwave
-                new Item("Counter_1", "kitchenCabinet", 8.30f, 7.27f, 90f),
-                new Item("Sink", "kitchenSink", 8.30f, 6.41f, 90f),
-                new Item("Counter_2", "kitchenCabinetDrawer", 8.30f, 5.55f, 90f),
-                new Item("Hood", "hoodModern", 8.47f, 8.13f, 90f, 1.55f),
-                new Item("UpperCabinet_1", "kitchenCabinetUpper", 8.53f, 6.41f, 90f, 1.45f),
-                new Item("UpperCabinet_2", "kitchenCabinetUpper", 8.53f, 7.27f, 90f, 1.45f),
-                new Item("UpperCabinet_3", "kitchenCabinetUpper", 8.53f, 5.55f, 90f, 1.45f),
-                new Item("CoffeeMachine", "kitchenCoffeeMachine", 8.45f, 7.27f, 90f, DropLow),
-                new Item("Toaster", "toaster", 8.45f, 5.30f, 90f, DropLow),
-                new Item("BorschPot", "prop:borschPot", 8.25f, 7.97f, 0f, DropLow),
-                new Item("Trash_Kitchen", "trashcan", 8.55f, 4.85f, 90f),
+                new Item("Fridge", "kitchenFridgeLarge", 10.55f, 11.51f, 90f),
+                new Item("Stove", "kitchenStove", 10.51f, 10.56f, 90f), // oven is built into the stove, no microwave
+                new Item("Counter_1", "kitchenCabinet", 10.51f, 9.7f, 90f),
+                new Item("Sink", "kitchenSink", 10.51f, 8.84f, 90f),
+                new Item("Counter_2", "kitchenCabinetDrawer", 10.51f, 7.98f, 90f),
+                new Item("Hood", "hoodModern", 10.68f, 10.56f, 90f, 1.55f),
+                new Item("UpperCabinet_1", "kitchenCabinetUpper", 10.74f, 8.84f, 90f, 1.45f),
+                new Item("UpperCabinet_2", "kitchenCabinetUpper", 10.74f, 9.7f, 90f, 1.45f),
+                new Item("UpperCabinet_3", "kitchenCabinetUpper", 10.74f, 7.98f, 90f, 1.45f),
+                new Item("CoffeeMachine", "kitchenCoffeeMachine", 10.66f, 9.7f, 90f, DropLow),
+                new Item("Toaster", "toaster", 10.66f, 7.73f, 90f, DropLow),
+                new Item("BorschPot", "prop:borschPot", 10.46f, 10.4f, 0f, DropLow),
+                new Item("Trash_Kitchen", "trashcan", 10.76f, 7.28f, 90f),
             }),
             ("Dining", new[]
             {
-                new Item("Table", "tableRound", 5.50f, 7.20f, 0f, 0f, 0.16f),
-                new Item("Chair_NE", "chair", 6.07f, 7.77f, 45f),
-                new Item("Chair_NW", "chair", 4.93f, 7.77f, -45f),
-                new Item("Chair_SW", "chair", 4.93f, 6.63f, -135f),
-                new Item("Chair_SE", "chair", 6.07f, 6.63f, 135f),
-                new Item("TablePlant", "plantSmall1", 5.50f, 7.20f, 0f, Drop),
+                new Item("Table", "tableRound", 6.874f, 9.004f, 0f, 0f, 0.16f),
+                new Item("Chair_NE", "chair", 7.444f, 9.574f, 45f),
+                new Item("Chair_NW", "chair", 6.304f, 9.574f, -45f),
+                new Item("Chair_SW", "chair", 6.304f, 8.434f, -135f),
+                new Item("Chair_SE", "chair", 7.444f, 8.434f, 135f),
+                new Item("TablePlant", "plantSmall1", 6.874f, 9.004f, 0f, Drop),
             }),
             ("Lounge", new[]
             {
-                new Item("Sofa", "loungeSofa", 8.34f, 3.00f, 90f), // ends at the glass front
-                new Item("Pillow_1", "pillow", 8.45f, 2.45f, 90f, Drop),
-                new Item("Pillow_2", "pillowBlue", 8.45f, 3.55f, 90f, Drop),
-                new Item("TvStand", "cabinetTelevision", 4.75f, 3.45f, -90f),
-                new Item("Tv", "televisionModern", 4.70f, 3.45f, -90f, 0.62f),
-                new Item("PS5", "prop:ps5", 4.65f, 4.42f, -90f),
-                new Item("Gamepad", "prop:dualSense", 4.92f, 3.95f, -70f, Drop), // on the TV stand, in front of the TV
-                new Item("Rug", "rugRectangle", 6.50f, 3.60f, 90f),
-                new Item("FloorLamp", "lampSquareFloor", 8.60f, 4.30f, 90f),
-                new Item("CoatRack", "coatRackStanding", 4.80f, 2.25f, 0f),
-                new Item("Plant", "pottedPlant", 4.75f, 4.85f, 0f),
+                new Item("Sofa", "loungeSofa", 10.55f, 3.47f, 90f), // ends at the glass front
+                new Item("Pillow_1", "pillow", 10.66f, 2.92f, 90f, Drop),
+                new Item("Pillow_2", "pillowBlue", 10.66f, 4.02f, 90f, Drop),
+                new Item("TvStand", "cabinetTelevision", 5.85f, 3.92f, -90f),
+                new Item("Tv", "televisionModern", 5.8f, 3.92f, -90f, 0.62f),
+                new Item("PS5", "prop:ps5", 5.75f, 4.89f, -90f),
+                new Item("Gamepad", "prop:dualSense", 6.02f, 4.42f, -70f, Drop), // on the TV stand, in front of the TV
+                new Item("Rug", "rugRectangle", 8.124f, 4.503f, 90f),
+                new Item("FloorLamp", "lampSquareFloor", 10.81f, 4.77f, 90f),
+                new Item("CoatRack", "coatRackStanding", 5.9f, 2.72f, 0f),
+                new Item("Plant", "pottedPlant", 5.85f, 5.32f, 0f),
             }),
             ("Corridor", new[]
             {
-                new Item("Box_1", "cardboardBoxClosed", 6.75f, 10.20f, 10f),
-                new Item("Box_2", "cardboardBoxClosed", 6.75f, 10.20f, -5f, Drop),
-                new Item("Box_3", "cardboardBoxOpen", 6.75f, 10.68f, 0f),
+                new Item("Box_1", "cardboardBoxClosed", 8.52f, 12.63f, 10f),
+                new Item("Box_2", "cardboardBoxClosed", 8.52f, 12.63f, -5f, Drop),
+                new Item("Box_3", "cardboardBoxOpen", 8.52f, 13.57f, 0f),
             }),
             ("StreamerRoom", new[]
             {
-                new Item("StreamDesk", "desk", 2.665f, 13.49f, 0f),
-                new Item("StreamChair", "chairDesk", 2.665f, 12.85f, 180f),
-                new Item("Monitor", "computerScreen", 2.665f, 13.62f, 0f, Drop),
-                new Item("Keyboard", "computerKeyboard", 2.665f, 13.30f, 0f, Drop),
-                new Item("Mouse", "computerMouse", 3.05f, 13.30f, 0f, Drop),
-                new Item("Speaker_L", "speakerSmall", 2.10f, 13.62f, 0f, Drop),
-                new Item("Speaker_R", "speakerSmall", 3.23f, 13.62f, 0f, Drop),
-                new Item("StreamRug", "rugRound", 2.665f, 12.75f, 0f, 0f, 0.13f),
-                new Item("Bookcase", "bookcaseOpen", 1.67f, 12.40f, -90f),
-                new Item("Books", "books", 1.67f, 12.40f, -90f, Drop),
-                new Item("Trash_Stream", "trashcan", 3.70f, 13.55f, 90f),
+                new Item("StreamDesk", "desk", 3.33f, 17.12f, 0f),
+                new Item("StreamChair", "chairDesk", 3.33f, 16.48f, 180f),
+                new Item("Monitor", "computerScreen", 3.33f, 17.25f, 0f, Drop),
+                new Item("Keyboard", "computerKeyboard", 3.33f, 16.93f, 0f, Drop),
+                new Item("Mouse", "computerMouse", 3.715f, 16.93f, 0f, Drop),
+                new Item("Speaker_L", "speakerSmall", 2.765f, 17.25f, 0f, Drop),
+                new Item("Speaker_R", "speakerSmall", 3.895f, 17.25f, 0f, Drop),
+                new Item("StreamRug", "rugRound", 3.33f, 16.38f, 0f, 0f, 0.13f),
+                new Item("Bookcase", "bookcaseOpen", 2f, 15.66f, -90f),
+                new Item("Books", "books", 2f, 15.66f, -90f, Drop),
+                new Item("Trash_Stream", "trashcan", 4.7f, 17.18f, 90f),
             }),
             ("Bedroom", new[]
             {
-                new Item("Bed", "bedDouble", 6.595f, 12.60f, 90f),
-                new Item("BedPillow_1", "pillowLong", 7.40f, 12.60f, 90f, Drop),
-                new Item("Bear", "bear", 6.90f, 13.10f, 60f, Drop, 0.08f),
-                new Item("Nightstand", "cabinetBed", 7.505f, 11.35f, 90f),
-                new Item("NightLamp", "lampRoundTable", 7.505f, 11.35f, 90f, Drop),
-                new Item("Wardrobe", "bookcaseClosedDoors", 4.31f, 12.90f, -90f),
-                new Item("BedRug", "rugRounded", 5.00f, 12.55f, 90f, 0f, 0.09f),
-                new Item("BedPlant", "pottedPlant", 4.32f, 13.62f, 0f),
+                new Item("Bed", "bedDouble", 8.555f, 15.49f, 90f),
+                new Item("BedPillow_1", "pillowLong", 9.36f, 15.49f, 90f, Drop),
+                new Item("Bear", "bear", 8.86f, 15.99f, 60f, Drop, 0.08f),
+                new Item("Nightstand", "cabinetBed", 9.465f, 14.24f, 90f),
+                new Item("NightLamp", "lampRoundTable", 9.465f, 14.24f, 90f, Drop),
+                new Item("Wardrobe", "bookcaseClosedDoors", 5.31f, 16.16f, -90f),
+                new Item("BedRug", "rugRounded", 6.249f, 15.81f, 90f, 0f, 0.09f),
+                new Item("BedPlant", "pottedPlant", 5.32f, 17.25f, 0f),
             }),
             ("Bathroom", new[]
             {
-                new Item("Shower", "shower", 2.00f, 8.54f, 180f), // glass doors face the room
-                new Item("Toilet", "toilet", 3.05f, 8.44f, 180f),
-                new Item("BathSink", "bathroomSink", 4.06f, 8.35f, 90f), // pedestal sink, stands on the floor
-                new Item("BathMirror", "bathroomMirror", 4.21f, 8.35f, 90f, 1.20f),
-                new Item("Washer", "washer", 3.94f, 9.26f, 0f),
-                new Item("BathMat", "rugDoormat", 2.00f, 9.38f, 0f),
+                new Item("Shower", "shower", 2.33f, 10.36f, 180f), // glass doors face the room
+                new Item("Toilet", "toilet", 3.38f, 10.26f, 180f),
+                new Item("BathSink", "bathroomSink", 5.16f, 10.17f, 90f), // pedestal sink, stands on the floor
+                new Item("BathMirror", "bathroomMirror", 5.31f, 10.17f, 90f, 1.20f),
+                new Item("Washer", "washer", 5.04f, 11.69f, 0f),
+                new Item("BathMat", "rugDoormat", 2.33f, 11.2f, 0f),
             }),
             ("Terrace", new[]
             {
-                new Item("Doormat", "rugDoormat", 5.66f, 1.55f, 0f),
-                new Item("Bench", "benchCushion", 2.60f, 1.30f, 0f),
-                new Item("TerraceTable", "sideTable", 3.70f, 1.35f, 0f),
-                new Item("TerracePlant_1", "pottedPlant", 0.40f, 1.45f, 0f),
-                new Item("TerracePlant_2", "pottedPlant", 11.30f, 1.45f, 0f),
+                new Item("Doormat", "rugDoormat", 7.075f, 2.02f, 0f),
+                new Item("Bench", "benchCushion", 3.251f, 1.627f, 0f),
+                new Item("TerraceTable", "sideTable", 4.626f, 1.689f, 0f),
+                new Item("TerracePlant_1", "pottedPlant", 0.4f, 1.81f, 0f),
+                new Item("TerracePlant_2", "pottedPlant", 14.24f, 1.81f, 0f),
             }),
         };
 
@@ -140,11 +140,34 @@ namespace Stasik.EditorTools
         {
             // The cap hangs by its strap at the tip of the coat rack's arm towards the room (+X): the pegs on top (1.5 m)
             // are out of the monkey's reach, the arms (1.25 m) are not; the other arms point at the TV stand and the facade.
-            ("CapHook", "CoatRack", new Vector3(5.02f, 1.245f, 2.245f), 90f, HoldSpot.Kind.Hook, new Vector3(5.45f, 0f, 2.40f), CapBuilder.PrefabPath),
+            ("CapHook", "CoatRack", new Vector3(6.12f, 1.245f, 2.715f), 90f, HoldSpot.Kind.Hook, new Vector3(6.55f, 0f, 2.87f), CapBuilder.PrefabPath),
+        };
+
+        // Doors in the interior doorways (tools/build_apartment.py, OPENINGS): Kenney doorway frame + panel, stretched
+        // to the opening. Position = the middle of the doorway on the floor (wall centre line). Yaw: the door's +Z
+        // points into the room (0 = +Z, rooms north of the corridor; 180 = -Z, south of it). Hinge: the jamb it hangs
+        // on, seen from the corridor looking into the room. Swing: Inward = into the room only, so open doors never
+        // block the corridor (from inside it's a pull: he steps aside); Away = away from whoever opens it.
+        private enum Hinge
+        {
+            Left,
+            Right,
+        }
+
+        private const string DoorModel = "doorway";
+        private const float DoorHeight = 2.1f;
+        private const float FrameInset = 0.015f; // the frame's inside, in from the opening's cut edges
+
+        private static readonly (string Name, Vector3 Position, float Width, float Yaw, Hinge Hinge, DoorSwing Swing)[] Doors =
+        {
+            ("Door_StreamerRoom", new Vector3(2.81f, 0f, 13.93f), 0.9f, 0f, Hinge.Right, DoorSwing.Inward),
+            ("Door_Bedroom", new Vector3(6.875f, 0f, 13.93f), 0.9f, 0f, Hinge.Left, DoorSwing.Inward), // swings clear of the bed
+            ("Door_Shower", new Vector3(3.125f, 0f, 12.13f), 0.9f, 180f, Hinge.Right, DoorSwing.Inward),
+            ("Door_Living", new Vector3(7.125f, 0f, 12.13f), 1.0f, 180f, Hinge.Left, DoorSwing.Inward),
         };
 
         /// <summary>
-        /// The Interaction root (unscaled, not static, unlike the furniture): hold spots and the items on them.
+        /// The Interaction root (unscaled, not static, unlike the furniture): doors, hold spots and the items on them.
         /// Run after Place() (spots name their furniture) and after the Player prefab build (it writes Cap.prefab).
         /// </summary>
         public static void PlaceInteraction()
@@ -154,6 +177,7 @@ namespace Stasik.EditorTools
             spots.SetParent(root, false);
             var items = new GameObject("Items").transform;
             items.SetParent(root, false);
+            PlaceDoors(root);
             foreach (var (name, host, position, yaw, kind, stand, start) in Spots)
             {
                 var spotGo = new GameObject(name);
@@ -182,6 +206,72 @@ namespace Stasik.EditorTools
                 holdable.SnapTo(spot.RestFor(holdable));
                 PrefabUtility.RecordPrefabInstancePropertyModifications(item.transform);
             }
+        }
+
+        private static void PlaceDoors(Transform root)
+        {
+            var model = AssetDatabase.LoadAssetAtPath<GameObject>($"{KitDir}/{DoorModel}.fbx");
+            if (model == null)
+            {
+                Debug.LogWarning($"[Stasik] Door model not found: {KitDir}/{DoorModel}.fbx");
+                return;
+            }
+
+            // The kit's doorway: the frame is the root mesh (origin at a corner), the panel its child "door" (origin at
+            // the hinge, runs along +X; sub-mesh 0 is the leaf, 1 the handles).
+            var frameMesh = model.GetComponent<MeshFilter>().sharedMesh;
+            var frameMats = model.GetComponent<MeshRenderer>().sharedMaterials;
+            var door = model.transform.Find("door");
+            var panelMesh = door.GetComponent<MeshFilter>().sharedMesh;
+            var panelMats = door.GetComponent<MeshRenderer>().sharedMaterials;
+            var leaf = panelMesh.GetSubMesh(0).bounds;
+            var handle = panelMesh.GetSubMesh(1).bounds.center;
+
+            var doors = new GameObject("Doors").transform;
+            doors.SetParent(root, false);
+            foreach (var (name, position, width, yaw, hinge, swing) in Doors)
+            {
+                // Stretched so the leaf (= the frame's inside) is a bit inside the opening: the frame then covers the cut
+                // edges of the wall instead of sharing their planes (those flickered, z-fighting).
+                var leafWidth = width - 2f * FrameInset;
+                var scale = new Vector3(leafWidth / leaf.size.x, (DoorHeight - FrameInset) / leaf.size.y, KitScale);
+                var go = new GameObject(name);
+                go.transform.SetParent(doors, false);
+                go.transform.SetPositionAndRotation(position, Quaternion.Euler(0f, yaw, 0f));
+
+                var frame = MeshObject("Frame", go.transform, frameMesh, frameMats, scale);
+                var fb = frameMesh.bounds;
+                frame.localPosition = -Vector3.Scale(scale, new Vector3(fb.center.x, 0f, fb.center.z));
+
+                var hingeT = new GameObject("Hinge").transform;
+                hingeT.SetParent(go.transform, false);
+                var right = hinge == Hinge.Right;
+                hingeT.localPosition = new Vector3((right ? 1f : -1f) * leafWidth / 2f, 0f, 0f);
+                hingeT.localRotation = Quaternion.Euler(0f, right ? 180f : 0f, 0f);
+
+                var panel = MeshObject("Panel", hingeT, panelMesh, panelMats, scale);
+                var box = panel.gameObject.AddComponent<BoxCollider>();
+                box.center = leaf.center;
+                box.size = leaf.size;
+                var body = panel.gameObject.AddComponent<Rigidbody>(); // moved by script: kinematic
+                body.isKinematic = true;
+                body.useGravity = false;
+                var handleT = new GameObject("Handle").transform;
+                handleT.SetParent(panel, false);
+                handleT.localPosition = new Vector3(handle.x, handle.y, 0f);
+
+                go.AddComponent<Door>().Setup(hingeT, box, handleT, swing);
+            }
+        }
+
+        private static Transform MeshObject(string name, Transform parent, Mesh mesh, Material[] materials, Vector3 scale)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.localScale = scale;
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            go.AddComponent<MeshRenderer>().sharedMaterials = materials;
+            return go.transform;
         }
 
         public static void Place()

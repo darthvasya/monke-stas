@@ -24,10 +24,11 @@ FLOOR = 100         # floor slab thickness (below Z=0)
 DOOR_W, DOOR_H = 900, 2100
 GLASS_T = 40        # glass thickness
 
-# Grid lines of the plan (wall centre lines)
-X_W, X_MID, X_LIV, X_COR, X_BED, X_E = 1320, 4010, 4400, 7070, 7820, 8850
-Y_LIV, Y_SHOWER, Y_COR, Y_ROOMS, Y_N = 1870, 7860, 9700, 11040, 13980
-TERRACE_X, TERRACE_Y = (0, 11740), (0, Y_LIV)
+# Grid lines of the plan (wall centre lines). The hand-drawn plan x1.25, then the corridor widened to 1.8 m and the
+# shower deepened to 2.45 m, so the doors open inwards past the bed and the shower stall.
+X_W, X_MID, X_LIV, X_COR, X_BED, X_E = 1650, 5010, 5500, 8840, 9780, 11060
+Y_LIV, Y_SHOWER, Y_COR, Y_ROOMS, Y_N = 2340, 9680, 12130, 13930, 17610
+TERRACE_X, TERRACE_Y = (0, 14680), (0, Y_LIV)
 
 ROOMS = {  # name: (x0, y0, x1, y1)
     "Living": (X_LIV, Y_LIV, X_E, Y_COR),
@@ -56,10 +57,10 @@ WALLS = [
 
 # Openings: wall, centre (absolute X or Y along the wall), width, sill height, top height, name
 OPENINGS = [
-    ("Wall_CorridorNorth", 2250, DOOR_W, 0, DOOR_H, "Door_StreamerRoom"),
-    ("Wall_CorridorNorth", 5500, DOOR_W, 0, DOOR_H, "Door_Bedroom"),
-    ("Wall_CorridorSouth", 2500, DOOR_W, 0, DOOR_H, "Door_Shower"),
-    ("Wall_CorridorSouth", 5700, 1000, 0, DOOR_H, "Door_Living"),
+    ("Wall_CorridorNorth", 2810, DOOR_W, 0, DOOR_H, "Door_StreamerRoom"),
+    ("Wall_CorridorNorth", 6875, DOOR_W, 0, DOOR_H, "Door_Bedroom"),
+    ("Wall_CorridorSouth", 3125, DOOR_W, 0, DOOR_H, "Door_Shower"),
+    ("Wall_CorridorSouth", 7125, 1000, 0, DOOR_H, "Door_Living"),
     ("Wall_North", (X_W + X_MID) / 2, 1400, 900, 2400, "Window_StreamerRoom"),
     ("Wall_North", (X_MID + X_BED) / 2, 1800, 900, 2400, "Window_Bedroom"),
 ]
@@ -71,7 +72,7 @@ WF_W, WF_D = 60, 80           # window frame profile: face width, depth
 
 # Panoramic glass front of the living room (Y = Y_LIV): lintel on top, glass below, glass door in it
 GLASS_TOP = 2700
-ENTRANCE_X = 5660           # entrance door centre
+ENTRANCE_X = 7075           # entrance door centre
 RAILING_H = 1000
 
 GLASS_COLOR = "#9FC7D9"
