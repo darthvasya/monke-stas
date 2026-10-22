@@ -3,7 +3,8 @@
     "rootNamespace": "Stasik.Player",
     "references": [
         "Unity.InputSystem",
-        "Stasik.Characters"
+        "Stasik.Characters",
+        "Stasik.Interaction"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Stasik.Interaction;
 using UnityEditor;
 using UnityEngine;
 
@@ -131,6 +132,57 @@ namespace Stasik.EditorTools
         };
 
         private static readonly List<MeshCollider> TempColliders = new();
+
+        // Places items rest on (Stasik.Interaction.HoldSpot), and what lies there when the day starts. Position = the
+        // spot (a hook: where the strap hangs), Yaw: the spot's +Z = out of the hook / towards the person using it.
+        // Stand = where he stands to use it (clear of the furniture for his 0.34 m capsule).
+        private static readonly (string Name, string Host, Vector3 Position, float Yaw, HoldSpot.Kind Kind, Vector3 Stand, string Start)[] Spots =
+        {
+            // The cap hangs by its strap at the tip of the coat rack's arm towards the room (+X): the pegs on top (1.5 m)
+            // are out of the monkey's reach, the arms (1.25 m) are not; the other arms point at the TV stand and the facade.
+            ("CapHook", "CoatRack", new Vector3(5.02f, 1.245f, 2.245f), 90f, HoldSpot.Kind.Hook, new Vector3(5.45f, 0f, 2.40f), CapBuilder.PrefabPath),
+        };
+
+        /// <summary>
+        /// The Interaction root (unscaled, not static, unlike the furniture): hold spots and the items on them.
+        /// Run after Place() (spots name their furniture) and after the Player prefab build (it writes Cap.prefab).
+        /// </summary>
+        public static void PlaceInteraction()
+        {
+            var root = new GameObject("Interaction").transform;
+            var spots = new GameObject("Spots").transform;
+            spots.SetParent(root, false);
+            var items = new GameObject("Items").transform;
+            items.SetParent(root, false);
+            foreach (var (name, host, position, yaw, kind, stand, start) in Spots)
+            {
+                var spotGo = new GameObject(name);
+                spotGo.transform.SetParent(spots, false);
+                spotGo.transform.SetPositionAndRotation(position, Quaternion.Euler(0f, yaw, 0f));
+                var spot = spotGo.AddComponent<HoldSpot>();
+                spot.SpotKind = kind;
+                spot.Host = GameObject.Find(host);
+                var standPoint = new GameObject("Stand").transform;
+                standPoint.SetParent(spotGo.transform, false);
+                standPoint.position = stand;
+                spot.StandPoint = standPoint;
+                if (string.IsNullOrEmpty(start))
+                    continue;
+
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(start);
+                if (prefab == null)
+                {
+                    Debug.LogWarning($"[Stasik] {start} is missing: build the Player prefab first (it writes the cap).");
+                    continue;
+                }
+
+                var item = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+                item.transform.SetParent(items, false);
+                var holdable = item.GetComponent<Holdable>();
+                holdable.SnapTo(spot.RestFor(holdable));
+                PrefabUtility.RecordPrefabInstancePropertyModifications(item.transform);
+            }
+        }
 
         public static void Place()
         {

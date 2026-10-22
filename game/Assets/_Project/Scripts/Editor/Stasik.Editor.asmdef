@@ -3,7 +3,9 @@
     "rootNamespace": "Stasik.EditorTools",
     "references": [
         "Stasik.Characters",
-        "Stasik.Player"
+        "Stasik.Player",
+        "Stasik.Interaction",
+        "Unity.Animation.Rigging"
     ],
     "includePlatforms": [
         "Editor"

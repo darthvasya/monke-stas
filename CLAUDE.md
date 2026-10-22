@@ -25,7 +25,8 @@ tools/               скрипты-помощники вне Unity
 ```
 Scripts/<Система>/   Core, Hub, Dialogue, Battle, Rhythm, Stream, Minigames/<Имя>
 Scripts/Player/      управление игроком: ввод, движение, камера от 3-го лица, анимации
-Scripts/Characters/  общее для персонажей (мех FurShells)
+Scripts/Characters/  общее для персонажей (мех FurShells, рука CharacterHand, кепка HeadCap)
+Scripts/Interaction/ предметы и места для них (Holdable, HoldSpot) — фундамент, не система; системы могут на него ссылаться
 Scripts/Editor/      редакторские инструменты (меню Stasik/...), asmdef только для Editor
 Story/Season00/      Ink-сценарии (.ink), по файлу на день
 Scenes/              сцены (Boot, Apartment, ...)
@@ -99,11 +100,16 @@ Audio/    Music, SFX, Voice
   **Stasik → Characters → Build Player Prefab** (`PlayerCharacterBuilder.cs`): извлекает клипы в `.anim`, удаляет FBX,
   собирает `Streamer.controller` и `Prefabs/Characters/Player.prefab`. Сборщик сцены ставит Player + PlayerCamera.
 - Кепка: `CapBuilder.cs` (меш под голову) + `python tools/make_cap_texture.py` (текстура по `cap_dims.json`),
-  `HeadCap`: снята / козырьком вперёд / задом наперёд (два меша, оба подогнаны под голову), мех под ней прячется.
-  Меняет её сам правой рукой (`CapHandIK`, IK Pass на слое аниматора): достаёт из-за спины, снимает, переворачивает.
-  Висит на `Player.prefab` (снята; `PlayerCharacterBuilder` вешает её при каждой сборке через
-  `CapBuilder.AttachToPlayer`), кнопка — `PlayerCap`. Смотреть отдельно: **Stasik → Characters → Cap Test Scene**
-  (`Scenes/Sandbox/CapTest.unity`; перед сборкой сцены кепка на префабе подгоняется заново).
+  кепка — предмет `Prefabs/Items/Cap.prefab` (`Holdable` + `HeadCap`: вперёд / задом наперёд, два меша под голову,
+  мех под ней прячется). `PlayerCharacterBuilder` подгоняет её под голову игрока при каждой сборке
+  (`CapBuilder.BuildCapPrefab`). День начинается с кепкой на вешалке (крючок `CapHook`).
+  Тест: **Stasik → Characters → Cap Test Scene** (`Scenes/Sandbox/CapTest.unity`).
+- Предметы: `Holdable` (якоря: хват, подвес, низ, поза переноски) и `HoldSpot` (крючок / поверхность). Новый предмет —
+  префаб с `Holdable`, новое место — строка в таблице `Spots` в `ApartmentFurniture.cs`, без нового кода.
+  Рука — `CharacterHand` (Animation Rigging: Two Bone IK на правую руку, риг строит `PlayerCharacterBuilder`): любое
+  действие = перенос предмета из места A в место B. Поворот кисти задаётся целью IK как поворот кости
+  (у этого скелета пальцы вдоль +Y кости, ладонь в −Z). `Animator.body*` читать только внутри IK — у нас не используется.
+- Порядок сборки: Build Player Prefab (пишет и Cap.prefab) → Build Apartment Scene.
   Подробности: `docs/characters/streamer.md`, раздел «Кепка».
 - Майка: боковые и задний виды запекаются **только на голову**; полоски на боках/спине/рукавах берутся с фронтального
   концепта на той же высоте («профиль полосок»), поэтому идут по кругу без стыков.
@@ -114,8 +120,11 @@ Audio/    Music, SFX, Voice
 
 ## Управление и камера
 - Камера как в Ведьмаке: `ThirdPersonCamera` (за плечом, мышь/правый стик, колесо — дистанция, упирается в стены).
-- WASD/стик — ходьба, Shift — бег, колесо — дистанция камеры, E — взаимодействие (пока без логики), Esc — курсор,
-  C / крестовина вверх — кепка (снята → козырьком вперёд → задом наперёд → снята).
+- WASD/стик — ходьба, Shift — бег, колесо — дистанция камеры, Esc — курсор.
+- E / кнопка юга — взаимодействие (`PlayerInteract`): взять предмет, повесить на крючок, поставить на стол или положить
+  перед собой. Если не дотягивается — сам подходит и поворачивается; стик отменяет подход. Пока рука работает с местом
+  в мире, ходьба заблокирована (лок с владельцем: `PlayerMovement.AddLock/RemoveLock`).
+- C / крестовина вверх — кепка: в руке → надеть козырьком вперёд → перевернуть → снять в руку.
 - **Скорость ходьбы/бега не задаётся руками**: `PlayerCharacterBuilder` меряет «родную» скорость клипа по стоящей
   ступне (`GaitAnalyzer`) и ставит её и в `PlayerMovement`, и в пороги блендтри — иначе ноги скользят («парит»).
   Ускорить шаг — `WalkPlayback`/`RunPlayback` в билдере, скорость пересчитается сама.

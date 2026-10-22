@@ -1,7 +1,10 @@
 {
     "name": "Stasik.Characters",
     "rootNamespace": "Stasik.Characters",
-    "references": [],
+    "references": [
+        "Stasik.Interaction",
+        "Unity.Animation.Rigging"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

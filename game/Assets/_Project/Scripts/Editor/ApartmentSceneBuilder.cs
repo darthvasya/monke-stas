@@ -214,6 +214,7 @@ namespace Stasik.EditorTools
             cam.fieldOfView = 50f;
 
             ApartmentFurniture.Place();
+            ApartmentFurniture.PlaceInteraction();
 
             PlacePlayer(cam);
 

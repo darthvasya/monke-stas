@@ -1,28 +1,30 @@
+using Stasik.Interaction;
 using UnityEngine;
 
 namespace Stasik.Characters
 {
     public enum CapStyle
     {
-        Off,
+        Off,      // not on a head: in a hand, on a hook, on a table, on the floor
         Forward,  // peak to the front
         Backward, // peak to the back
     }
 
     /// <summary>
-    /// The cap on the Head bone (built by CapBuilder): off, peak forward or peak backward. Each way of wearing has its
-    /// own mesh fitted to the head (a head isn't the same front and back) and its own place on the bone.
+    /// The cap: an item (Holdable) that can also be worn, peak forward or peak backward. Each way of wearing has its own
+    /// mesh fitted to the player's head (a head isn't the same front and back) and its own place on the Head bone
+    /// (built by CapBuilder into Prefabs/Items/Cap.prefab).
     ///
-    /// In Play mode the character changes it with his right hand (CapHandIK drives the arm): to put it on he reaches
-    /// behind his back, brings the cap up over his head and puts it on; to take it off he lifts it and tucks it behind
-    /// his back; to turn it round he takes the peak and turns the cap round his head. In edit mode it just switches.
+    /// The character's hand (CharacterHand) puts it on, takes it off and carries it; turning it round on the head is a
+    /// move of the cap's own: the hand holds the peak while the cap spins round the head past the right side.
+    /// C cycles: in hand -> peak forward -> peak backward -> in hand.
     ///
     /// While it is on, fur under it is hidden: Stasik/FurShell reads the cap globals set here, otherwise the strands
     /// poke through the crown. One worn cap at a time (the globals are shared).
     /// </summary>
     [ExecuteAlways]
-    [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
-    public class HeadCap : MonoBehaviour
+    [RequireComponent(typeof(Holdable), typeof(MeshFilter), typeof(MeshRenderer))]
+    public class HeadCap : MonoBehaviour, CharacterHand.IGoalSource
     {
         /// <summary>One way of wearing: the mesh fitted for it and where it sits on the head bone.</summary>
         [System.Serializable]
@@ -48,63 +50,46 @@ namespace Stasik.Characters
             public bool IsValid => _mesh != null;
         }
 
-        /// <summary>Where the right hand should be this frame (world space), for CapHandIK.</summary>
-        public struct HandGoal
-        {
-            public Vector3 Position;    // wrist
-            public Quaternion Rotation; // hand bone: fingers along its +Y, palm towards its -Z
-            public Vector3 ElbowHint;
-            public float Weight;
-        }
-
-        private enum Change
-        {
-            None,
-            PutOn,
-            TakeOff,
-            TurnRound,
-        }
-
         private static readonly int WorldToLocalId = Shader.PropertyToID("_CapWorldToLocal");
         private static readonly int RadiiId = Shader.PropertyToID("_CapRadii");
 
-        // Fractions of each change: reach / carry / place for putting on, reach / lift / carry for taking off, reach /
-        // turn for turning round; the rest of each is the hand going back to the animation.
-        private const float PutOnReach = 0.25f, PutOnCarry = 0.68f, PutOnPlace = 0.8f;
-        private const float TakeOffReach = 0.22f, TakeOffLift = 0.36f, TakeOffCarry = 0.74f;
+        // Turning round: reach the peak / turn / let go, as fractions of the turn time.
         private const float TurnReach = 0.25f, TurnDone = 0.75f;
         private const float HandLength = 0.07f; // m from the wrist to the fingers holding the peak
 
         [SerializeField] private Placement _forward;
         [SerializeField] private Placement _backward;
-        [SerializeField] private CapStyle _style = CapStyle.Forward;
+        [SerializeField] private CapStyle _style;
         [SerializeField] private float _bandMargin = 0.02f; // fur rooted this far below the band is hidden too
-
-        [Header("Hands (Play mode)")]
-        [SerializeField] private float _putOnTime = 1.5f;
-        [SerializeField] private float _takeOffTime = 1.4f;
-        [SerializeField] private float _turnTime = 1.2f;
         [SerializeField] private float _lift = 0.14f;       // m above the head the cap passes when put on / taken off
+        [SerializeField] private float _turnTime = 1.2f;
         [SerializeField] private float _turnHop = 0.04f;    // m the cap lifts while it turns round
 
         private MeshFilter _filter;
         private MeshRenderer _renderer;
-        private Animator _animator;
-        private Transform _hand;
-        private Transform _hips;
-        private Change _change;
-        private CapStyle _from;
-        private float _elapsed;
-        private int _ikFrame = -10;
+        private Holdable _holdable;
         private bool _masked;
+        private bool _turning;
+        private CapStyle _turnFrom;
+        private CapStyle _turnTo;
+        private float _turnStart;
 
         public CapStyle Style => _style;
 
         public bool Worn => _style != CapStyle.Off;
 
-        public bool IsChanging => _change != Change.None;
+        public bool IsTurning => _turning;
 
-        /// <summary>Fills in both ways of wearing (CapBuilder); applies <paramref name="style"/> at once.</summary>
+        public Holdable Holdable
+        {
+            get
+            {
+                Cache();
+                return _holdable;
+            }
+        }
+
+        /// <summary>Fills in both ways of wearing (CapBuilder). Off leaves the cap where it is.</summary>
         public void Setup(Placement forward, Placement backward, CapStyle style)
         {
             _forward = forward;
@@ -113,120 +98,110 @@ namespace Stasik.Characters
             Settle();
         }
 
-        /// <summary>
-        /// Changes the cap: by hand in Play mode (when the character has a humanoid animator), at once otherwise.
-        /// A change while one is running finishes that one at once first.
-        /// </summary>
-        public void SetStyle(CapStyle style)
+        /// <summary>On <paramref name="head"/> at once (edit mode, the test scene, the end of putting it on).</summary>
+        public void Wear(Transform head, CapStyle style)
         {
-            if (style != CapStyle.Off && !Placed(style).IsValid)
+            if (head == null || style == CapStyle.Off || !Placed(style).IsValid)
                 return;
-            if (IsChanging)
-                Settle();
-            if (style == _style)
-                return;
-
-            _from = _style;
+            _turning = false;
             _style = style;
-            if (!Application.isPlaying || !isActiveAndEnabled || !FindHand())
+            Holdable.SnapTo(HeadRest(head, style));
+            Show(style);
+        }
+
+        /// <summary>The rest on a head: the placement on the bone; the hand comes in and leaves beside the head.</summary>
+        public ItemRest HeadRest(Transform head, CapStyle style)
+        {
+            var placed = Placed(style);
+            return ItemRest.At(head, placed.LocalPosition, placed.LocalRotation, Vector3.up * _lift, true);
+        }
+
+        /// <summary>From the hand onto the head.</summary>
+        public bool TryPutOn(CharacterHand hand, CapStyle style = CapStyle.Forward)
+        {
+            if (hand == null || hand.Held != Holdable || style == CapStyle.Off || !Placed(style).IsValid)
+                return false;
+            var head = hand.Head;
+            return hand.TryMove(Holdable, HeadRest(head, style), () => Wear(head, style));
+        }
+
+        /// <summary>From the head into the hand.</summary>
+        public bool TryTakeOff(CharacterHand hand) =>
+            hand != null && Worn && !_turning && hand.Held == null && transform.parent == hand.Head && hand.TryPickUp(Holdable);
+
+        /// <summary>Turns it round on the head (peak forward to backward or back), the hand holding the peak.</summary>
+        public bool TryTurnRound(CharacterHand hand)
+        {
+            if (hand == null || !Worn || _turning || hand.Held != null || transform.parent != hand.Head)
+                return false;
+            var to = _style == CapStyle.Forward ? CapStyle.Backward : CapStyle.Forward;
+            if (!Placed(to).IsValid || !hand.TryRunCustom(this))
+                return false;
+            _turning = true;
+            _turnFrom = _style;
+            _turnTo = to;
+            _turnStart = Time.time;
+            return true;
+        }
+
+        /// <summary>The cap button: in hand -> peak forward -> peak backward -> in hand.</summary>
+        public bool TryNext(CharacterHand hand)
+        {
+            if (hand == null || hand.IsBusy)
+                return false;
+            if (hand.Held == Holdable)
+                return TryPutOn(hand);
+            return _style switch
             {
-                Settle();
-                return;
-            }
-
-            _change = _from == CapStyle.Off ? Change.PutOn : style == CapStyle.Off ? Change.TakeOff : Change.TurnRound;
-            _elapsed = 0f;
-            if (_change == Change.PutOn)
-                _renderer.enabled = false; // still behind his back
+                CapStyle.Forward => TryTurnRound(hand),
+                CapStyle.Backward => TryTakeOff(hand),
+                _ => false,
+            };
         }
 
-        /// <summary>The cap button: off -> peak forward -> peak backward -> off.</summary>
-        public void Next() => SetStyle(_style switch
-        {
-            CapStyle.Off => CapStyle.Forward,
-            CapStyle.Forward => CapStyle.Backward,
-            _ => CapStyle.Off,
-        });
-
-        public void PutOn() => SetStyle(CapStyle.Forward);
-
-        public void TakeOff() => SetStyle(CapStyle.Off);
-
-        public void Toggle() => SetStyle(Worn ? CapStyle.Off : CapStyle.Forward);
-
-        /// <summary>
-        /// The hand goal for this frame; false when the hand is free. Called by CapHandIK from OnAnimatorIK (bones are
-        /// still in last frame's pose there - one frame behind is fine for a target). Its calls also tell the cap that
-        /// the IK runs: without them (no IK pass on the layer) the cap follows the targets instead of the hand.
-        /// </summary>
-        public bool GetHandGoal(out HandGoal goal)
-        {
-            _ikFrame = Time.frameCount;
-            return ComputeHandGoal(out goal);
-        }
-
-        /// <summary>The same goal without counting as an IK pass (CapHandIK turns the hand after the IK with it).</summary>
-        public bool PeekHandGoal(out HandGoal goal) => ComputeHandGoal(out goal);
-
-        private bool ComputeHandGoal(out HandGoal goal)
+        /// <summary>The hand while the cap turns round: reach the peak, follow it round the head, let go.</summary>
+        public bool GetHandGoal(CharacterHand hand, out CharacterHand.Goal goal)
         {
             goal = default;
-            if (!IsChanging || _hand == null)
+            if (!_turning)
+                return false;
+            var u = TurnProgress;
+            if (u >= 1f)
                 return false;
 
-            var u = Progress;
-            Vector3 grip;
+            Pose wrist;
             float weight;
-            switch (_change)
-            {
-                case Change.PutOn:
-                    if (u < PutOnReach)
-                        (grip, weight) = (BackSpot(), Ease(u / PutOnReach));
-                    else if (u < PutOnCarry)
-                        (grip, weight) = (Bezier(BackSpot(), SideSpot(), Grip(_style) + Up * _lift, Ease(Span(u, PutOnReach, PutOnCarry))), 1f);
-                    else if (u < PutOnPlace)
-                        (grip, weight) = (Vector3.Lerp(Grip(_style) + Up * _lift, Grip(_style), Ease(Span(u, PutOnCarry, PutOnPlace))), 1f);
-                    else
-                        (grip, weight) = (Grip(_style), 1f - Ease(Span(u, PutOnPlace, 1f)));
-                    break;
-                case Change.TakeOff:
-                    if (u < TakeOffReach)
-                        (grip, weight) = (Grip(_from), Ease(u / TakeOffReach));
-                    else if (u < TakeOffLift)
-                        (grip, weight) = (Vector3.Lerp(Grip(_from), Grip(_from) + Up * _lift, Ease(Span(u, TakeOffReach, TakeOffLift))), 1f);
-                    else if (u < TakeOffCarry)
-                        (grip, weight) = (Bezier(Grip(_from) + Up * _lift, SideSpot(), BackSpot(), Ease(Span(u, TakeOffLift, TakeOffCarry))), 1f);
-                    else
-                        (grip, weight) = (BackSpot(), 1f - Ease(Span(u, TakeOffCarry, 1f)));
-                    break;
-                default:
-                    if (u < TurnReach)
-                        (grip, weight) = (Grip(_from), Ease(u / TurnReach));
-                    else if (u < TurnDone)
-                        (grip, weight) = (TurnGrip(Ease(Span(u, TurnReach, TurnDone))), 1f);
-                    else
-                        (grip, weight) = (Grip(_style), 1f - Ease(Span(u, TurnDone, 1f)));
-                    break;
-            }
+            if (u < TurnReach)
+                (wrist, weight) = (Holdable.GripAt(RestPose(_turnFrom)), CharacterHand.Ease(u / TurnReach));
+            else if (u < TurnDone)
+                (wrist, weight) = (Holdable.GripAt(TurnPose(CharacterHand.Ease(CharacterHand.Span(u, TurnReach, TurnDone)))), 1f);
+            else
+                (wrist, weight) = (Holdable.GripAt(RestPose(_turnTo)), 1f - CharacterHand.Ease(CharacterHand.Span(u, TurnDone, 1f)));
 
-            // Fingers on the peak pointing at the crown, palm down on the cap (back of the hand up). Behind the back the
-            // cap is hidden; the hand keeps the turn it carries the cap with.
-            var capRotation = _renderer.enabled ? transform.rotation : CarryRotation();
-            var fingers = capRotation * Vector3.back;
-            var backOfHand = Vector3.ProjectOnPlane(capRotation * Vector3.up, fingers).normalized;
-            var body = BodyRotation;
-            goal = new HandGoal
+            goal = new CharacterHand.Goal
             {
-                Position = grip - fingers * HandLength,
-                Rotation = Quaternion.LookRotation(backOfHand, fingers),
-                // Elbow up and out to the side, so the forearm doesn't cover his face.
-                ElbowHint = _hips.position + body * new Vector3(0.5f, 0.55f, -0.15f),
+                Position = wrist.position,
+                Rotation = wrist.rotation,
+                ElbowHint = hand.ElbowHintFor(wrist.position),
                 Weight = weight,
             };
             return true;
         }
 
-        private void Awake() => Cache();
+        private float TurnProgress => Mathf.Clamp01((Time.time - _turnStart) / Mathf.Max(_turnTime, 1e-3f));
+
+        private void Awake()
+        {
+            Cache();
+            if (_holdable != null)
+                _holdable.Lifted += OnLifted;
+        }
+
+        private void OnDestroy()
+        {
+            if (_holdable != null)
+                _holdable.Lifted -= OnLifted;
+        }
 
         private void Cache()
         {
@@ -234,21 +209,22 @@ namespace Stasik.Characters
                 return;
             _filter = GetComponent<MeshFilter>();
             _renderer = GetComponent<MeshRenderer>();
+            _holdable = GetComponent<Holdable>();
         }
 
         private void OnEnable() => Settle();
 
         private void OnDisable()
         {
-            if (IsChanging)
-                Settle(); // don't leave it frozen in the hand
+            if (_turning)
+                FinishTurn();
             SetMask(CapStyle.Off);
         }
 
         private void OnValidate()
         {
 #if UNITY_EDITOR
-            // Meshes and renderers can't be switched inside OnValidate itself.
+            // Meshes can't be switched inside OnValidate itself.
             UnityEditor.EditorApplication.delayCall += () =>
             {
                 if (this != null && isActiveAndEnabled)
@@ -257,230 +233,104 @@ namespace Stasik.Characters
 #endif
         }
 
-        private void Update()
-        {
-            if (IsChanging)
-                _elapsed += Time.deltaTime;
-        }
-
-        // After the animators and the IK: the cap follows the head, or the hand holding it, in the rendered pose.
+        // After the animation: the cap turning round follows the head; the mask follows the cap's place.
         private void LateUpdate()
         {
-            if (IsChanging)
+            if (_turning)
             {
-                if (Progress >= 1f)
-                    Settle();
+                var u = TurnProgress;
+                var s = u < TurnReach ? 0f : u < TurnDone ? CharacterHand.Ease(CharacterHand.Span(u, TurnReach, TurnDone)) : 1f;
+                if (u >= 1f)
+                {
+                    FinishTurn();
+                }
                 else
-                    PoseInHand(Progress);
+                {
+                    var pose = TurnPose(s);
+                    Show(s < 0.5f ? _turnFrom : _turnTo);
+                    transform.SetPositionAndRotation(pose.position, pose.rotation);
+                }
             }
 
-            SetMask(Masked);
+            SetMask(_turning ? _turnTo : _style);
         }
 
-        private float Duration => _change switch
+        private void OnLifted()
         {
-            Change.PutOn => _putOnTime,
-            Change.TakeOff => _takeOffTime,
-            _ => _turnTime,
-        };
-
-        private float Progress => Mathf.Clamp01(_elapsed / Mathf.Max(Duration, 1e-3f));
-
-        /// <summary>
-        /// Whose place hides the fur now: the cap's while it sits on the head or turns round on it; nobody's while it is
-        /// in the hand or behind his back.
-        /// </summary>
-        private CapStyle Masked => _change switch
-        {
-            Change.None => _style,
-            Change.PutOn => Progress >= PutOnPlace ? _style : CapStyle.Off,
-            Change.TakeOff => Progress < TakeOffReach ? _from : CapStyle.Off,
-            _ => _style,
-        };
-
-        private void PoseInHand(float u)
-        {
-            switch (_change)
-            {
-                case Change.PutOn:
-                    if (u < PutOnReach)
-                    {
-                        _renderer.enabled = false;
-                        return;
-                    }
-
-                    Show(Placed(_style));
-                    var rest = RestPose(Placed(_style));
-                    var held = HeldPose(_style, Turn(CarryRotation(), rest.rotation, Ease(Span(u, PutOnReach, PutOnCarry)), -1f));
-                    Blend(held, rest, u < PutOnCarry ? 0f : Ease(Span(u, PutOnCarry, PutOnPlace)));
-                    break;
-                case Change.TakeOff:
-                    if (u >= TakeOffCarry)
-                    {
-                        _renderer.enabled = false;
-                        return;
-                    }
-
-                    var from = RestPose(Placed(_from));
-                    var carried = Turn(from.rotation, CarryRotation(), Ease(Span(u, TakeOffReach, TakeOffCarry)), 1f);
-                    Blend(from, HeldPose(_from, carried), u < TakeOffReach ? 0f : Ease(Span(u, TakeOffReach, TakeOffLift)));
-                    break;
-                default:
-                    var s = u < TurnReach ? 0f : u < TurnDone ? Ease(Span(u, TurnReach, TurnDone)) : 1f;
-                    var (position, rotation) = TurnPose(s);
-                    Show(Placed(s < 0.5f ? _from : _style));
-                    transform.SetPositionAndRotation(position, rotation);
-                    break;
-            }
+            _turning = false;
+            _style = CapStyle.Off;
+            Show(CapStyle.Forward);
+            SetMask(CapStyle.Off);
         }
 
-        /// <summary>The cap turning round on the head: s 0..1 = 0..180 degrees round the band's up, a little hop.</summary>
-        private (Vector3 position, Quaternion rotation) TurnPose(float s)
+        private void FinishTurn()
         {
-            var a = RestPose(Placed(_from));
-            var b = RestPose(Placed(_style));
-            // The peak passes the character's right, where the right hand holds it: from the front that's a positive
-            // turn round the band's up, from the back a negative one.
-            var spin = Quaternion.AngleAxis((_from == CapStyle.Backward ? -180f : 180f) * s, a.rotation * Vector3.up);
-            return (Vector3.Lerp(a.position, b.position, s) + Up * (_turnHop * Mathf.Sin(Mathf.PI * s)), spin * a.rotation);
+            _turning = false;
+            _style = _turnTo;
+            Holdable.SnapTo(HeadRest(transform.parent, _style));
+            Show(_style);
         }
 
-        private Vector3 TurnGrip(float s)
-        {
-            var (position, rotation) = TurnPose(s);
-            return position + rotation * GripLocal(s < 0.5f ? _from : _style);
-        }
-
-        /// <summary>Cap held by the peak: the grip point at the real hand (after IK), or at the target without IK.</summary>
-        private (Vector3 position, Quaternion rotation) HeldPose(CapStyle style, Quaternion rotation)
-        {
-            Vector3 grip;
-            if (Time.frameCount - _ikFrame <= 1)
-            {
-                var fingers = rotation * Vector3.back;
-                grip = _hand.position + fingers * HandLength;
-            }
-            else
-            {
-                ComputeHandGoal(out var goal);
-                grip = goal.Position + rotation * Vector3.back * HandLength;
-            }
-
-            return (grip - rotation * GripLocal(style), rotation);
-        }
-
-        /// <summary>
-        /// How the cap is carried in the hand: peak forward, level, the crown hanging behind the hand (so a cap worn
-        /// backward doesn't swing its crown through his face, nor into his hip behind the back).
-        /// </summary>
-        private Quaternion CarryRotation() =>
-            Quaternion.LookRotation(Vector3.ProjectOnPlane(BodyRotation * Vector3.forward, Vector3.up), Vector3.up);
-
-        /// <summary>
-        /// From one cap rotation to another, the turn round the vertical done explicitly and the small rest by slerp.
-        /// Half a turn goes the way of <paramref name="halfTurnSign"/>: the crown swings round the outside of the hand
-        /// (the character's right), not through his head.
-        /// </summary>
-        private static Quaternion Turn(Quaternion from, Quaternion to, float t, float halfTurnSign)
-        {
-            var yaw = Vector3.SignedAngle(Vector3.ProjectOnPlane(from * Vector3.forward, Vector3.up),
-                Vector3.ProjectOnPlane(to * Vector3.forward, Vector3.up), Vector3.up);
-            if (Mathf.Abs(yaw) > 170f)
-                yaw = Mathf.Abs(yaw) * halfTurnSign;
-            return Quaternion.Slerp(Quaternion.AngleAxis(yaw * t, Vector3.up) * from, to, t);
-        }
-
-        private void Blend((Vector3 position, Quaternion rotation) a, (Vector3 position, Quaternion rotation) b, float t) =>
-            transform.SetPositionAndRotation(Vector3.Lerp(a.position, b.position, t), Quaternion.Slerp(a.rotation, b.rotation, t));
-
-        /// <summary>Shows the settled state of _style: mesh and place on the head (LateUpdate keeps the mask).</summary>
+        /// <summary>Mesh and anchors for the current state; on a head also its place. Off never moves the cap.</summary>
         private void Settle()
         {
             Cache();
-            _change = Change.None;
-            var placed = Placed(_style);
-            if (_style == CapStyle.Off || !placed.IsValid)
+            if (Worn && Placed(_style).IsValid && transform.parent != null)
             {
-                _renderer.enabled = false;
-                SetMask(CapStyle.Off);
+                transform.SetLocalPositionAndRotation(Placed(_style).LocalPosition, Placed(_style).LocalRotation);
+                Show(_style);
+            }
+            else if (Placed(CapStyle.Forward).IsValid)
+            {
+                Show(CapStyle.Forward);
+            }
+        }
+
+        /// <summary>The mesh for a way of wearing (Off = the forward one) and the hand / hook / surface anchors for it.</summary>
+        private void Show(CapStyle style)
+        {
+            var mesh = Placed(style).Mesh;
+            if (mesh == null)
                 return;
-            }
-
-            Show(placed);
-            transform.localPosition = placed.LocalPosition;
-            transform.localRotation = placed.LocalRotation;
-        }
-
-        private void Show(Placement placed)
-        {
-            if (_filter.sharedMesh != placed.Mesh)
-                _filter.sharedMesh = placed.Mesh;
+            if (_filter.sharedMesh != mesh)
+                _filter.sharedMesh = mesh;
             _renderer.enabled = true;
-        }
 
-        private bool FindHand()
-        {
-            if (_hand != null)
-                return true;
-            _animator = GetComponentInParent<Animator>();
-            if (_animator == null || !_animator.isHuman)
-                return false;
-            _hand = _animator.GetBoneTransform(HumanBodyBones.RightHand);
-            _hips = _animator.GetBoneTransform(HumanBodyBones.Hips);
-            if (_hand == null || _hips == null)
-            {
-                _hand = null;
-                return false;
-            }
-
-            if (_animator.GetComponent<CapHandIK>() == null)
-                _animator.gameObject.AddComponent<CapHandIK>();
-            return true;
+            var b = mesh.bounds;
+            // The hand holds the peak's edge a little right of the middle (the right hand's side): fingers towards the
+            // crown, palm down on the peak. The cap's +z is the peak in each placement.
+            var peak = new Vector3(0.04f, -0.015f, b.max.z - 0.03f);
+            var grip = new LocalPose(peak - Vector3.back * HandLength, Quaternion.LookRotation(Vector3.up, Vector3.back));
+            // Hangs on a hook by the back strap: back up, peak down, the crown facing out of the hook.
+            var hang = new LocalPose(new Vector3(0f, 0.011f, b.min.z + 0.005f), Quaternion.LookRotation(Vector3.up, Vector3.back));
+            var stand = new LocalPose(new Vector3(0f, b.min.y, 0f), Quaternion.identity);
+            if (_holdable != null) // a cap left on the player by an older build has none
+                _holdable.SetAnchors(grip, hang, stand, true);
         }
 
         private Placement Placed(CapStyle style) => style == CapStyle.Backward ? _backward : _forward;
 
-        /// <summary>Where the cap sits for this placement right now (the head moves with the animation).</summary>
-        private (Vector3 position, Quaternion rotation) RestPose(Placement placed)
+        /// <summary>Where the cap sits on the head for this way of wearing, right now (the head moves).</summary>
+        private Pose RestPose(CapStyle style)
         {
+            var placed = Placed(style);
             var head = transform.parent;
             return head == null
-                ? (placed.LocalPosition, placed.LocalRotation)
-                : (head.TransformPoint(placed.LocalPosition), head.rotation * placed.LocalRotation);
+                ? new Pose(placed.LocalPosition, placed.LocalRotation)
+                : new Pose(head.TransformPoint(placed.LocalPosition), head.rotation * placed.LocalRotation);
         }
 
-        /// <summary>Where the hand holds the peak's edge, in cap space (the peak points along +z of each placement).</summary>
-        private Vector3 GripLocal(CapStyle style)
+        /// <summary>The cap turning round on the head: s 0..1 = 0..180 degrees round the band's up, a little hop.</summary>
+        private Pose TurnPose(float s)
         {
-            var mesh = Placed(style).Mesh;
-            // A little to the right of the middle: the right hand takes the peak from its side.
-            return mesh == null ? Vector3.forward * 0.2f : new Vector3(0.04f, -0.015f, mesh.bounds.max.z - 0.03f);
+            var a = RestPose(_turnFrom);
+            var b = RestPose(_turnTo);
+            // The peak passes the character's right, where the right hand holds it: from the front that's a positive
+            // turn round the band's up, from the back a negative one.
+            var spin = Quaternion.AngleAxis((_turnFrom == CapStyle.Backward ? -180f : 180f) * s, a.rotation * Vector3.up);
+            return new Pose(Vector3.Lerp(a.position, b.position, s) + Vector3.up * (_turnHop * Mathf.Sin(Mathf.PI * s)),
+                spin * a.rotation);
         }
-
-        private Vector3 Grip(CapStyle style)
-        {
-            var (position, rotation) = RestPose(Placed(style));
-            return position + rotation * GripLocal(style);
-        }
-
-        // Character frame: facing the way the player root faces (the model under it is turned to match), level.
-        // From transforms, not Animator.bodyRotation: that one may only be read inside OnAnimatorIK.
-        private Quaternion BodyRotation =>
-            Quaternion.LookRotation(Vector3.ProjectOnPlane(_animator.transform.root.forward, Vector3.up), Vector3.up);
-        private Vector3 Up => Vector3.up;
-
-        /// <summary>Behind his back at the right hip, where the cap is kept while it's off.</summary>
-        private Vector3 BackSpot() => _hips.position + BodyRotation * new Vector3(0.15f, 0.04f, -0.17f);
-
-        /// <summary>Beside the head on the right: the curve the hand takes between the back and over the head.</summary>
-        private Vector3 SideSpot() => transform.parent.position + BodyRotation * new Vector3(0.32f, 0.02f, -0.05f);
-
-        private static Vector3 Bezier(Vector3 a, Vector3 control, Vector3 b, float t) =>
-            Vector3.Lerp(Vector3.Lerp(a, control, t), Vector3.Lerp(control, b, t), t);
-
-        private static float Span(float u, float from, float to) => Mathf.Clamp01((u - from) / (to - from));
-
-        private static float Ease(float t) => t * t * (3f - 2f * t);
 
         /// <summary>
         /// Hides the fur under <paramref name="style"/>'s place, or shows it again for Off. Clears only a mask this cap
@@ -489,7 +339,7 @@ namespace Stasik.Characters
         private void SetMask(CapStyle style)
         {
             var placed = Placed(style);
-            if (style == CapStyle.Off || !placed.IsValid)
+            if (style == CapStyle.Off || !placed.IsValid || transform.parent == null)
             {
                 if (_masked)
                     Shader.SetGlobalVector(RadiiId, Vector4.zero);
@@ -498,8 +348,8 @@ namespace Stasik.Characters
             }
 
             // Cap space in metres: origin on the band, y up (the shader compares it with the radii).
-            var (position, rotation) = RestPose(placed);
-            var worldToCap = Matrix4x4.TRS(position, rotation, Vector3.one).inverse;
+            var pose = RestPose(style);
+            var worldToCap = Matrix4x4.TRS(pose.position, pose.rotation, Vector3.one).inverse;
             Shader.SetGlobalMatrix(WorldToLocalId, Matrix4x4.Translate(Vector3.up * _bandMargin) * worldToCap);
             Shader.SetGlobalVector(RadiiId, new Vector4(placed.Radii.x, placed.Radii.y, placed.Radii.z, 1f));
             _masked = true;

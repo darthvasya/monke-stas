@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using Stasik.Characters;
+using Stasik.Interaction;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -11,9 +12,10 @@ namespace Stasik.EditorTools
     /// <summary>
     /// The streamer's baseball cap (washed 6-panel dad cap: "nymf71" in front, "маленький / хуй" on the back).
     /// The mesh is generated to fit the character's head: an elliptic crown that encloses every head vertex above the
-    /// band, a back opening with the strap, a curved brim and the top button. It is attached to the Head bone, so it
-    /// follows every animation, and carries HeadCap: off, peak forward or peak backward (a second mesh, the cap turned
-    /// round on the same band and fitted again), fur under it is hidden while worn.
+    /// band, a back opening with the strap, a curved brim and the top button. Saved as the item prefab
+    /// Prefabs/Items/Cap.prefab (Holdable + HeadCap): it lives on the coat rack hook, the hand takes it, and worn it sits
+    /// on the Head bone peak forward or peak backward (a second mesh, the cap turned round on the same band and fitted
+    /// again), fur under it hidden. Fitted to the Player model's head on every PlayerCharacterBuilder run.
     ///
     /// The texture is drawn by tools/make_cap_texture.py from the dimensions this builder writes to cap_dims.json; the
     /// UV layout below and the script must agree:
@@ -25,6 +27,7 @@ namespace Stasik.EditorTools
     public static class CapBuilder
     {
         public const string Dir = "Assets/_Project/Art/Models/Characters/Streamer/Cap";
+        public const string PrefabPath = "Assets/_Project/Prefabs/Items/Cap.prefab";
         private const string MeshPath = Dir + "/Cap.asset";
         private const string BackwardMeshPath = Dir + "/Cap_Backward.asset";
         private const string MaterialPath = Dir + "/M_Cap.mat";
@@ -77,7 +80,7 @@ namespace Stasik.EditorTools
 
         /// <summary>
         /// Scenes/Sandbox/CapTest: the player model in Idle wearing the cap, with a camera on the head. Refits the cap
-        /// on Player.prefab first (so a changed Fit shows up here), then puts it on the instance peak forward.
+        /// first (so a changed Fit shows up here), then puts a Cap.prefab instance on the mannequin peak forward.
         /// Additive mode leaves the open scenes alone: no light and the camera disabled.
         /// </summary>
         public static string BuildTestScene(NewSceneMode mode)
@@ -86,8 +89,11 @@ namespace Stasik.EditorTools
                 return "Cap: stop Play mode first.";
             if (AssetDatabase.LoadAssetAtPath<GameObject>(PlayerCharacterBuilder.PrefabPath) == null)
                 return "Cap: build the Player prefab first.";
-            var result = AddToPlayerPrefab();
+            var result = RefitCap();
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerCharacterBuilder.PrefabPath);
+            var capPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+            if (capPrefab == null)
+                return result;
 
             var open = SceneManager.GetSceneByPath(TestScenePath);
             if (open.IsValid() && mode == NewSceneMode.Additive)
@@ -95,22 +101,25 @@ namespace Stasik.EditorTools
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, mode);
             var player = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene);
             player.transform.SetPositionAndRotation(TestSpot, Quaternion.identity);
-            // A mannequin: in Play mode it only idles (no floor here, and it must not walk with the real player).
+            // A mannequin: in Play mode it only idles (no floor here, and it must not walk or act with the real player).
             var movement = player.GetComponent<Stasik.Player.PlayerMovement>();
             var input = player.GetComponent<Stasik.Player.PlayerInput>();
             var controller = player.GetComponent<CharacterController>();
-            var button = player.GetComponent<Stasik.Player.PlayerCap>();
+            var interact = player.GetComponent<Stasik.Player.PlayerInteract>();
             movement.enabled = false;
             input.enabled = false;
             controller.enabled = false;
-            button.enabled = false;
+            interact.enabled = false;
             var model = player.GetComponentInChildren<Animator>().gameObject;
-            var cap = model.GetComponentInChildren<HeadCap>();
-            if (cap == null)
-                return result; // the fit failed: AddToPlayerPrefab says why
-            cap.SetStyle(CapStyle.Forward);
-            // Set from code on a prefab instance: record the overrides, or the scene reloads them as the prefab has them.
-            foreach (var component in new Component[] { movement, input, controller, button, cap })
+            var head = model.GetComponent<Animator>().GetBoneTransform(HumanBodyBones.Head);
+            var cap = ((GameObject)PrefabUtility.InstantiatePrefab(capPrefab, scene)).GetComponent<HeadCap>();
+            cap.Wear(head, CapStyle.Forward);
+            // Set from code on prefab instances: record the overrides, or the scene reloads them as the prefabs have them.
+            foreach (var component in new Component[]
+                     {
+                         movement, input, controller, interact, cap, cap.transform, cap.GetComponent<MeshFilter>(),
+                         cap.GetComponent<MeshRenderer>(), cap.Holdable,
+                     })
                 PrefabUtility.RecordPrefabInstancePropertyModifications(component);
 
             // Idle pose: in edit mode the animator doesn't run.
@@ -118,7 +127,6 @@ namespace Stasik.EditorTools
                 if (clip.name == "Idle")
                     clip.SampleAnimation(model, 0f);
 
-            var head = model.GetComponent<Animator>().GetBoneTransform(HumanBodyBones.Head);
             var camGo = new GameObject("CapCamera");
             SceneManager.MoveGameObjectToScene(camGo, scene);
             var cam = camGo.AddComponent<Camera>();
@@ -146,25 +154,31 @@ namespace Stasik.EditorTools
             return result + $" - test scene {TestScenePath}";
         }
 
-        [MenuItem("Stasik/Characters/Add Cap To Player")]
-        private static void Menu() => Debug.Log("[Stasik] " + AddToPlayerPrefab());
+        [MenuItem("Stasik/Characters/Refit Cap")]
+        private static void Menu() => Debug.Log("[Stasik] " + RefitCap());
 
         /// <summary>
-        /// Puts a freshly fitted cap on the Player prefab (replacing an old one), taken off, with the cap button
-        /// (PlayerCap). PlayerCharacterBuilder does the same on every rebuild; this is for refitting the cap alone.
+        /// Fits the cap to the Player prefab's head again and rewrites Cap.prefab (PlayerCharacterBuilder does it on
+        /// every rebuild; this is for working on the cap alone). Removes a cap left on the player by older builds.
         /// </summary>
-        public static string AddToPlayerPrefab()
+        public static string RefitCap()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)
                 return "Cap: stop Play mode first.";
             var contents = PrefabUtility.LoadPrefabContents(PlayerCharacterBuilder.PrefabPath);
             try
             {
+                var legacy = false;
                 foreach (var t in contents.GetComponentsInChildren<Transform>(true))
                     if (t != null && t.name == "Cap")
+                    {
                         Object.DestroyImmediate(t.gameObject);
-                var result = AttachToPlayer(contents);
-                PrefabUtility.SaveAsPrefabAsset(contents, PlayerCharacterBuilder.PrefabPath);
+                        legacy = true;
+                    }
+
+                var result = BuildCapPrefab(contents);
+                if (legacy)
+                    PrefabUtility.SaveAsPrefabAsset(contents, PlayerCharacterBuilder.PrefabPath);
                 return result;
             }
             finally
@@ -174,55 +188,43 @@ namespace Stasik.EditorTools
         }
 
         /// <summary>
-        /// The player's cap: attached taken off (the day starts without it), the cap button cycles it. For a player
-        /// root with the model under it; an old cap must be removed first.
+        /// Fits both ways of wearing to the player's head (peak forward and peak backward, each fitted to the head),
+        /// saves the meshes in place (their GUIDs stay), the material and cap_dims.json (for tools/make_cap_texture.py),
+        /// and writes Prefabs/Items/Cap.prefab over the same path (the scene's instance keeps working). Adds nothing to
+        /// the player.
         /// </summary>
-        public static string AttachToPlayer(GameObject player)
+        public static string BuildCapPrefab(GameObject player)
         {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                return "Cap: stop Play mode first.";
             var model = player.GetComponentInChildren<Animator>().gameObject;
-            var result = Attach(model, CapStyle.Off);
-            var control = player.GetComponent<Stasik.Player.PlayerCap>();
-            if (control == null)
-                control = player.AddComponent<Stasik.Player.PlayerCap>();
-            var cap = model.GetComponentInChildren<HeadCap>(true);
-            var so = new SerializedObject(control);
-            so.FindProperty("_cap").objectReferenceValue = cap;
-            so.ApplyModifiedPropertiesWithoutUndo();
-
-            // The right hand does the changing (the animator's layer has the IK pass on, PlayerCharacterBuilder).
-            var hand = model.GetComponent<CapHandIK>();
-            if (hand == null)
-                hand = model.AddComponent<CapHandIK>();
-            var handSo = new SerializedObject(hand);
-            handSo.FindProperty("_cap").objectReferenceValue = cap;
-            handSo.ApplyModifiedPropertiesWithoutUndo();
-            return result;
-        }
-
-        /// <summary>
-        /// Builds both ways of wearing the cap for the model's head with the default fit (peak forward and peak
-        /// backward, each fitted to the head), attaches the cap to the Head bone and saves the meshes, the material
-        /// and cap_dims.json (for tools/make_cap_texture.py).
-        /// </summary>
-        public static string Attach(GameObject model, CapStyle style = CapStyle.Forward)
-        {
             var forward = FitCap(model, new Fit());
             var backward = FitCap(model, new Fit { Backward = true });
             if (forward == null || backward == null)
                 return "Cap: head bones not found.";
+            if (Mathf.Abs(forward.Head.lossyScale.x - 1f) > 0.01f)
+                Debug.LogWarning("[Stasik] Cap: the head bone is scaled; the cap is fitted in world metres.");
 
             Directory.CreateDirectory(Dir);
-            SaveMesh(forward.Mesh, MeshPath);
-            SaveMesh(backward.Mesh, BackwardMeshPath);
+            forward.Mesh = SaveMesh(forward.Mesh, MeshPath);
+            backward.Mesh = SaveMesh(backward.Mesh, BackwardMeshPath);
             File.WriteAllText(DimsPath, DimsJson(forward.Radii));
             AssetDatabase.ImportAsset(DimsPath);
-            var cap = Create(forward, backward, style);
-            cap.GetComponent<MeshRenderer>().sharedMaterial = Material();
+
+            var cap = new GameObject("Cap");
+            cap.AddComponent<MeshFilter>();
+            cap.AddComponent<MeshRenderer>().sharedMaterial = Material();
+            // Carried at the right hip, peak forward and level, held by the peak.
+            cap.AddComponent<Holdable>().SetCarry(new Vector3(0.2f, 0.12f, 0.22f), Vector3.zero, 0.85f);
+            cap.AddComponent<HeadCap>().Setup(Placed(forward.Head, forward), Placed(forward.Head, backward), CapStyle.Off);
+            Directory.CreateDirectory(Path.GetDirectoryName(PrefabPath));
+            PrefabUtility.SaveAsPrefabAsset(cap, PrefabPath);
+            Object.DestroyImmediate(cap);
             AssetDatabase.SaveAssets();
 
             var r = forward.Radii;
             var texture = File.Exists(TexturePath) ? "" : " - no texture yet: run tools/make_cap_texture.py";
-            return $"Cap: radii {r.x:F3} x {r.y:F3} x {r.z:F3} m, forward and backward, {style}{texture}";
+            return $"Cap: radii {r.x:F3} x {r.y:F3} x {r.z:F3} m, forward and backward -> {PrefabPath}{texture}";
         }
 
         /// <summary>
@@ -304,10 +306,21 @@ namespace Stasik.EditorTools
             new(fitted.Mesh, head.InverseTransformPoint(fitted.Position),
                 Quaternion.Inverse(head.rotation) * fitted.Rotation, fitted.Radii);
 
-        private static void SaveMesh(Mesh mesh, string path)
+        /// <summary>Saves the mesh at the path; an existing asset is overwritten in place, so its GUID stays.</summary>
+        private static Mesh SaveMesh(Mesh mesh, string path)
         {
-            AssetDatabase.DeleteAsset(path);
-            AssetDatabase.CreateAsset(mesh, path);
+            var existing = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            if (existing == null)
+            {
+                AssetDatabase.CreateAsset(mesh, path);
+                return mesh;
+            }
+
+            EditorUtility.CopySerialized(mesh, existing);
+            existing.name = Path.GetFileNameWithoutExtension(path);
+            EditorUtility.SetDirty(existing);
+            Object.DestroyImmediate(mesh);
+            return existing;
         }
 
         /// <summary>What tools/make_cap_texture.py needs to place the seams, the opening and the text.</summary>

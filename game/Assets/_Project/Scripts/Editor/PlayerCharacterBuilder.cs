@@ -5,6 +5,7 @@ using Stasik.Player;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
+using UnityEngine.Animations.Rigging;
 
 namespace Stasik.EditorTools
 {
@@ -397,11 +398,6 @@ namespace Stasik.EditorTools
                 }
             }
 
-            // IK pass: the right hand takes the cap off and puts it on (Stasik.Characters.CapHandIK).
-            var layers = controller.layers;
-            layers[0].iKPass = true;
-            controller.layers = layers;
-
             AssetDatabase.SaveAssets();
             log.AppendLine($"Animator: {ControllerPath}");
             return controller;
@@ -473,8 +469,14 @@ namespace Stasik.EditorTools
             furSo.ApplyModifiedPropertiesWithoutUndo();
             fur.enabled = false; // shells are runtime children: keep them out of the saved prefab
 
-            // The cap: taken off (the day starts without it), the cap button cycles it. Fitted in the bind pose.
-            log.AppendLine(CapBuilder.AttachToPlayer(root));
+            // Hands: the right arm is an Animation Rigging Two Bone IK moved by CharacterHand; PlayerInteract is E / C.
+            var hand = AddHand(root, animator);
+            var interactSo = new SerializedObject(root.AddComponent<PlayerInteract>());
+            interactSo.FindProperty("_hand").objectReferenceValue = hand;
+            interactSo.ApplyModifiedPropertiesWithoutUndo();
+
+            // The cap is an item of its own (it lives on the coat rack), fitted to this head in the bind pose.
+            log.AppendLine(CapBuilder.BuildCapPrefab(root));
 
             Directory.CreateDirectory(Path.GetDirectoryName(PrefabPath));
             var prefab = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
@@ -484,6 +486,49 @@ namespace Stasik.EditorTools
             prefabFur.ApplyModifiedPropertiesWithoutUndo();
             AssetDatabase.SaveAssets();
             log.AppendLine($"Prefab: {PrefabPath} (model scale {scale:F3})");
+        }
+
+        /// <summary>
+        /// The right hand: an Animation Rigging rig on the model with a Two Bone IK on the right arm. CharacterHand moves
+        /// its target (wrist position + hand bone rotation) and elbow hint and sets its weight (0 = the animation).
+        /// </summary>
+        private static CharacterHand AddHand(GameObject root, Animator animator)
+        {
+            var model = animator.gameObject;
+            var upper = animator.GetBoneTransform(HumanBodyBones.RightUpperArm);
+            var lower = animator.GetBoneTransform(HumanBodyBones.RightLowerArm);
+            var wrist = animator.GetBoneTransform(HumanBodyBones.RightHand);
+
+            var rigGo = new GameObject("HandRig");
+            rigGo.transform.SetParent(model.transform, false);
+            var rig = rigGo.AddComponent<Rig>();
+            var ikGo = new GameObject("RightArmIK");
+            ikGo.transform.SetParent(rigGo.transform, false);
+            var target = new GameObject("RightHandTarget").transform;
+            target.SetParent(ikGo.transform, false);
+            target.SetPositionAndRotation(wrist.position, wrist.rotation);
+            var hint = new GameObject("RightElbowHint").transform;
+            hint.SetParent(ikGo.transform, false);
+            hint.position = lower.position + root.transform.right * 0.3f;
+
+            var ik = ikGo.AddComponent<TwoBoneIKConstraint>();
+            ik.data.root = upper;
+            ik.data.mid = lower;
+            ik.data.tip = wrist;
+            ik.data.target = target;
+            ik.data.hint = hint;
+            ik.data.targetPositionWeight = 1f;
+            ik.data.targetRotationWeight = 1f;
+            ik.data.hintWeight = 1f;
+            ik.weight = 0f;
+            model.AddComponent<RigBuilder>().layers.Add(new RigLayer(rig));
+
+            var hand = model.AddComponent<CharacterHand>();
+            var so = new SerializedObject(hand);
+            so.FindProperty("_ik").objectReferenceValue = ik;
+            so.FindProperty("_holdRoot").objectReferenceValue = root.transform;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            return hand;
         }
 
         /// <summary>Blend thresholds = movement speeds; each clip plays at its playback multiplier.</summary>
