@@ -241,7 +241,9 @@ namespace Stasik.Interaction
             for (var i = 0; i < count; i++)
             {
                 var c = _overlaps[i];
-                if (!c.transform.IsChildOf(transform) && c is not CharacterController)
+                // Not itself, nor the furniture it's part of (the fridge's box collider takes in its doors).
+                if (!c.transform.IsChildOf(transform) && c is not CharacterController
+                    && (Host == null || !c.transform.IsChildOf(Host.transform)))
                     return true;
             }
 

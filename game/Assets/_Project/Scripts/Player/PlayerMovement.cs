@@ -57,6 +57,9 @@ namespace Stasik.Player
 
         public bool IsApproaching => _approaching;
 
+        /// <summary>Turning in place to face something, an action waiting at the end (also an approach's last turn).</summary>
+        public bool IsTurning => _faceDone != null;
+
         /// <summary>Freezes player input until the same owner removes it (a lock from someone else stays).</summary>
         public void AddLock(object owner) => _locks.Add(owner);
 

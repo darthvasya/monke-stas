@@ -198,8 +198,10 @@ namespace Stasik.EditorTools
             spots.SetParent(root, false);
             var items = new GameObject("Items").transform;
             items.SetParent(root, false);
+            MakeLoose(items);
             PlaceDoors(root);
             PlaceSeats(root);
+            ApartmentFridge.Place(root);
             foreach (var (name, host, position, yaw, kind, stand, start) in Spots)
             {
                 var spotGo = new GameObject(name);
@@ -228,6 +230,101 @@ namespace Stasik.EditorTools
                 holdable.SnapTo(spot.RestFor(holdable));
                 PrefabUtility.RecordPrefabInstancePropertyModifications(item.transform);
             }
+        }
+
+        // Anything up to this size (its longest side, m) is a thing he can take in his hand: a gamepad, the flower on the
+        // table, a pillow, the toaster, the PS5. Bigger is furniture.
+        private const float MaxHoldSize = 0.5f;
+
+        /// <summary>
+        /// Small furniture becomes loose things: each is wrapped in an unscaled, non-static Holdable (Kenney models are
+        /// 0.2-scaled and static) under <paramref name="items"/>, its +Z to the item's front (where he takes it from),
+        /// with a box collider and a grip fitted to its shape; what it stands on is its host, so the box collider of the
+        /// sofa doesn't hide the pillow on it.
+        /// </summary>
+        private static void MakeLoose(Transform items)
+        {
+            Physics.SyncTransforms();
+            foreach (var (roomName, roomItems) in Layout)
+            {
+                foreach (var item in roomItems)
+                {
+                    var go = GameObject.Find($"Furniture/{roomName}/{item.Name}");
+                    if (go == null)
+                        continue;
+                    var bounds = WorldBounds(go);
+                    if (Mathf.Max(bounds.size.x, Mathf.Max(bounds.size.y, bounds.size.z)) > MaxHoldSize)
+                        continue;
+
+                    var host = Support(go, bounds);
+                    var wrapper = new GameObject(item.Name).transform;
+                    wrapper.SetParent(items, false);
+                    wrapper.SetPositionAndRotation(new Vector3(bounds.center.x, bounds.min.y, bounds.center.z),
+                        Quaternion.Euler(0f, item.Yaw + 180f, 0f));
+                    go.transform.SetParent(wrapper, true);
+                    foreach (var t in go.GetComponentsInChildren<Transform>())
+                        t.gameObject.isStatic = false;
+                    foreach (var c in go.GetComponentsInChildren<Collider>())
+                        Object.DestroyImmediate(c);
+
+                    var local = BoundsIn(wrapper, go);
+                    var box = wrapper.gameObject.AddComponent<BoxCollider>();
+                    box.center = local.center;
+                    box.size = local.size;
+                    var holdable = wrapper.gameObject.AddComponent<Holdable>();
+                    HoldableFit.Setup(holdable, local);
+                    holdable.Host = host;
+                }
+            }
+        }
+
+        /// <summary>The furniture <paramref name="go"/> stands on (null: the floor).</summary>
+        private static GameObject Support(GameObject go, Bounds bounds)
+        {
+            var below = new Vector3(bounds.center.x, bounds.min.y - 0.02f, bounds.center.z);
+            foreach (var c in Physics.OverlapSphere(below, 0.03f, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (c.transform.IsChildOf(go.transform))
+                    continue;
+                // A piece of furniture: a direct child of a room under Furniture.
+                var t = c.transform;
+                while (t.parent != null && t.parent.parent != null && t.parent.parent.name != "Furniture")
+                    t = t.parent;
+                if (t.parent != null && t.parent.parent != null && t.parent.parent.name == "Furniture")
+                    return t.gameObject;
+            }
+
+            return null;
+        }
+
+        /// <summary>All the meshes of <paramref name="go"/> as a box in <paramref name="frame"/>'s space.</summary>
+        private static Bounds BoundsIn(Transform frame, GameObject go)
+        {
+            var first = true;
+            var result = new Bounds();
+            foreach (var mf in go.GetComponentsInChildren<MeshFilter>())
+            {
+                if (mf.sharedMesh == null)
+                    continue;
+                var b = mf.sharedMesh.bounds;
+                for (var i = 0; i < 8; i++)
+                {
+                    var corner = b.center + Vector3.Scale(b.extents,
+                        new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
+                    var p = frame.InverseTransformPoint(mf.transform.TransformPoint(corner));
+                    if (first)
+                    {
+                        result = new Bounds(p, Vector3.zero);
+                        first = false;
+                    }
+                    else
+                    {
+                        result.Encapsulate(p);
+                    }
+                }
+            }
+
+            return result;
         }
 
         private static void PlaceDoors(Transform root)
@@ -379,7 +476,7 @@ namespace Stasik.EditorTools
             return top;
         }
 
-        private static Transform MeshObject(string name, Transform parent, Mesh mesh, Material[] materials, Vector3 scale)
+        internal static Transform MeshObject(string name, Transform parent, Mesh mesh, Material[] materials, Vector3 scale)
         {
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
@@ -462,35 +559,7 @@ namespace Stasik.EditorTools
         }
 
         /// <summary>Bounds of all meshes of the item in the item root's local space.</summary>
-        private static Bounds LocalBounds(GameObject go)
-        {
-            var root = go.transform;
-            var first = true;
-            var result = new Bounds();
-            foreach (var mf in go.GetComponentsInChildren<MeshFilter>())
-            {
-                if (mf.sharedMesh == null)
-                    continue;
-                var b = mf.sharedMesh.bounds;
-                for (var i = 0; i < 8; i++)
-                {
-                    var corner = b.center + Vector3.Scale(b.extents,
-                        new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
-                    var p = root.InverseTransformPoint(mf.transform.TransformPoint(corner));
-                    if (first)
-                    {
-                        result = new Bounds(p, Vector3.zero);
-                        first = false;
-                    }
-                    else
-                    {
-                        result.Encapsulate(p);
-                    }
-                }
-            }
-
-            return result;
-        }
+        private static Bounds LocalBounds(GameObject go) => BoundsIn(go.transform, go);
 
         // Kenney's "glass" material imports opaque; swap it for the project's transparent glass.
         private static void UseProjectGlass(GameObject go)
@@ -587,6 +656,16 @@ namespace Stasik.EditorTools
             ["PropBlack"] = (new Color(0.08f, 0.08f, 0.09f), 0f, 0.7f),
             ["PotMetal"] = (new Color(0.55f, 0.56f, 0.58f), 0.8f, 0.6f),
             ["Borsch"] = (new Color(0.61f, 0.09f, 0.16f), 0f, 0.8f),
+            ["FridgeInside"] = (new Color(0.93f, 0.96f, 0.98f), 0f, 0.5f),
+            ["FridgeShelf"] = (new Color(0.80f, 0.90f, 0.95f), 0f, 0.9f),
+            ["BeerGlass"] = (new Color(0.33f, 0.16f, 0.04f), 0f, 0.9f),
+            ["BeerLabel"] = (new Color(0.95f, 0.80f, 0.25f), 0f, 0.3f),
+            ["Gold"] = (new Color(0.85f, 0.68f, 0.20f), 0.8f, 0.6f),
+            ["Kolbasa"] = (new Color(0.55f, 0.18f, 0.14f), 0f, 0.45f),
+            ["KolbasaEnd"] = (new Color(0.85f, 0.45f, 0.42f), 0f, 0.3f),
+            ["CheeseWax"] = (new Color(0.78f, 0.10f, 0.08f), 0f, 0.7f),
+            ["Cheese"] = (new Color(0.98f, 0.82f, 0.30f), 0f, 0.3f),
+            ["PickleJar"] = (new Color(0.45f, 0.62f, 0.25f), 0f, 0.9f),
         };
 
         private static GameObject BuildProp(string id)
@@ -611,7 +690,7 @@ namespace Stasik.EditorTools
             return root;
         }
 
-        private static Material PropMaterial(string name)
+        internal static Material PropMaterial(string name)
         {
             var path = $"{MaterialsDir}/M_{name}.mat";
             var mat = AssetDatabase.LoadAssetAtPath<Material>(path);

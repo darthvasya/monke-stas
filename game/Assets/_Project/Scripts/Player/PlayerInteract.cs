@@ -8,9 +8,11 @@ namespace Stasik.Player
     /// The player's hands on the world. E acts on the best target in front (take an item, hang it on a hook, put it on a
     /// table or down in front, open or close a door by the handle); if it's out of arm's reach he walks up to it first
     /// and turns to it. C is the cap: in hand -> put on peak forward -> turn it round -> take it off into the hand.
-    /// X, with the cap on: a good scratch. Moving the stick cancels walking up; presses while the hand is busy are
-    /// ignored.
+    /// X, with the cap on: a good scratch. F with something to eat or drink in the hand: eat or drink it (HeldItemUse).
+    /// Moving the stick cancels walking up; presses while the hand is busy are ignored. Runs before other scripts: the
+    /// head it tilts while drinking must be in place before the cap's fur mask reads it.
     /// </summary>
+    [DefaultExecutionOrder(-10)]
     [RequireComponent(typeof(PlayerInput), typeof(PlayerMovement))]
     public class PlayerInteract : MonoBehaviour
     {
@@ -32,6 +34,7 @@ namespace Stasik.Player
         private PlayerMovement _movement;
         private bool _locked;
         private Sitting _sitting;
+        private HeldItemUse _use;
         private readonly RaycastHit[] _hits = new RaycastHit[16];
 
         /// <summary>What E acts on now (null + holding something = put it down); for a future prompt.</summary>
@@ -53,6 +56,7 @@ namespace Stasik.Player
         {
             _sitting?.Abort();
             _sitting = null;
+            _use = null;
             _movement.CancelApproach();
             SetLock(false);
             if (_hand != null)
@@ -93,6 +97,50 @@ namespace Stasik.Player
             // Only a man in a cap may: with it on his head and the hand free.
             if (_input.ScratchPressed && !_hand.IsBusy && _hand.Held == null && Cap() is { Worn: true })
                 _hand.TryRunCustom(new HandScratch());
+
+            if (_input.UsePressed && _use == null && !_hand.IsBusy && !_movement.IsApproaching && !_movement.IsTurning
+                && _hand.Held is { } held && held.TryGetComponent(out Consumable food))
+            {
+                var use = new HeldItemUse(held, food);
+                if (_hand.TryRunCustom(use))
+                    _use = use;
+            }
+        }
+
+        // After the animation and the arm's IK: eating or drinking, the item stays in the fist and the head goes along.
+        private void LateUpdate()
+        {
+            if (_use == null)
+                return;
+            // Not asked this frame: the hand dropped it (cancelled, disabled).
+            if (_use.AskedFrame != Time.frameCount || _hand.Held == null)
+            {
+                _use = null;
+                return;
+            }
+
+            var held = _hand.Held;
+            var fist = held.Grip.ParentFor(new Pose(_hand.Bone.position, _hand.Bone.rotation));
+            held.transform.SetPositionAndRotation(fist.position, fist.rotation);
+            TiltHead(_use.HeadPitch);
+            if (_use.Done)
+            {
+                // Its last goal was the carrying pose: the hand carries on from there.
+                _hand.CompleteImmediately();
+                _use = null;
+            }
+        }
+
+        /// <summary>Head and neck turned about his left-right axis, over the animation (negative = up).</summary>
+        private void TiltHead(float degrees)
+        {
+            if (Mathf.Abs(degrees) < 0.01f || _hand.Head == null)
+                return;
+            var axis = _hand.BodyRotation * Vector3.right;
+            var neck = _hand.Animator.GetBoneTransform(HumanBodyBones.Neck);
+            if (neck != null)
+                neck.rotation = Quaternion.AngleAxis(degrees * 0.4f, axis) * neck.rotation;
+            _hand.Head.rotation = Quaternion.AngleAxis(degrees * (neck != null ? 0.6f : 1f), axis) * _hand.Head.rotation;
         }
 
         private void Act()
@@ -240,7 +288,9 @@ namespace Stasik.Player
                 surface = hit.point;
             }
 
-            var yaw = Quaternion.LookRotation(body * Vector3.forward, Vector3.up);
+            // Turned as it's held, so the hand finds it the same way when he takes it again.
+            var turn = Vector3.ProjectOnPlane(held.transform.forward, Vector3.up);
+            var yaw = Quaternion.LookRotation(turn.sqrMagnitude > 1e-4f ? turn : body * Vector3.forward, Vector3.up);
             var rest = ItemRest.InWorld(held.Base.ParentFor(new Pose(surface, yaw)), Vector3.up * 0.12f);
             _hand.TryPutDown(rest);
         }
@@ -271,6 +321,9 @@ namespace Stasik.Player
                 if (distance > _range || height < -0.1f || height > _maxHeight || angle > _maxAngle || !CanSee(target, point))
                     continue;
                 var score = distance / _range + 0.6f * angle / 90f - 0.1f * target.Priority - (target == Target ? _stickiness : 0f);
+                // An open door is seldom what's wanted next (the fridge's beer is): it wins only when looked right at.
+                if (target is Door { IsOpen: true })
+                    score += 0.3f;
                 if (score >= bestScore)
                     continue;
                 bestScore = score;
