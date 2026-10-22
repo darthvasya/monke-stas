@@ -14,6 +14,7 @@ namespace Stasik.Player
         private InputAction _interact;
         private InputAction _zoom;
         private InputAction _cap;
+        private InputAction _scratch;
 
         public Vector2 Move => _move.ReadValue<Vector2>();
         public Vector2 Look => _look.ReadValue<Vector2>();
@@ -21,6 +22,7 @@ namespace Stasik.Player
         public bool InteractPressed => _interact.WasPressedThisFrame();
         public float Zoom => _zoom.ReadValue<Vector2>().y;
         public bool CapPressed => _cap.WasPressedThisFrame();
+        public bool ScratchPressed => _scratch.WasPressedThisFrame();
 
         /// <summary>Gamepad stick values are per-second, mouse delta is per-frame: the camera scales them differently.</summary>
         public bool LookIsGamepad => _look.activeControl?.device is Gamepad;
@@ -54,6 +56,10 @@ namespace Stasik.Player
             _cap = new InputAction("Cap", InputActionType.Button);
             _cap.AddBinding("<Keyboard>/c");
             _cap.AddBinding("<Gamepad>/dpad/up");
+
+            _scratch = new InputAction("Scratch", InputActionType.Button);
+            _scratch.AddBinding("<Keyboard>/x");
+            _scratch.AddBinding("<Gamepad>/dpad/down");
         }
 
         private void OnEnable()
@@ -64,6 +70,7 @@ namespace Stasik.Player
             _interact.Enable();
             _zoom.Enable();
             _cap.Enable();
+            _scratch.Enable();
         }
 
         private void OnDisable()
@@ -74,6 +81,7 @@ namespace Stasik.Player
             _interact.Disable();
             _zoom.Disable();
             _cap.Disable();
+            _scratch.Disable();
         }
     }
 }

@@ -8,7 +8,8 @@ namespace Stasik.Player
     /// The player's hands on the world. E acts on the best target in front (take an item, hang it on a hook, put it on a
     /// table or down in front, open or close a door by the handle); if it's out of arm's reach he walks up to it first
     /// and turns to it. C is the cap: in hand -> put on peak forward -> turn it round -> take it off into the hand.
-    /// Moving the stick cancels walking up; presses while the hand is busy are ignored.
+    /// X, with the cap on: a good scratch. Moving the stick cancels walking up; presses while the hand is busy are
+    /// ignored.
     /// </summary>
     [RequireComponent(typeof(PlayerInput), typeof(PlayerMovement))]
     public class PlayerInteract : MonoBehaviour
@@ -88,6 +89,10 @@ namespace Stasik.Player
 
             if (_input.CapPressed && !_hand.IsBusy && !_movement.IsApproaching)
                 Cap()?.TryNext(_hand);
+
+            // Only a man in a cap may: with it on his head and the hand free.
+            if (_input.ScratchPressed && !_hand.IsBusy && _hand.Held == null && Cap() is { Worn: true })
+                _hand.TryRunCustom(new HandScratch());
         }
 
         private void Act()
@@ -122,6 +127,11 @@ namespace Stasik.Player
             else if (Target is Holdable item)
             {
                 Reach(item, ActionPoint(item, null), () => _hand.TryPickUp(item));
+            }
+            else if (Target is HoldSpot hook && Verb != InteractVerb.None && WornCap() is { } cap)
+            {
+                // Off the head and onto the hook in one go.
+                Reach(hook, ActionPoint(hook, cap), () => _hand.TryMove(cap, hook.RestFor(cap), hook.PlayWobble));
             }
         }
 
@@ -168,6 +178,15 @@ namespace Stasik.Player
             return _hand.Head != null ? _hand.Head.GetComponentInChildren<HeadCap>() : null;
         }
 
+        /// <summary>The cap on his head, when the hand is free to take it off.</summary>
+        private Holdable WornCap() =>
+            _hand.Held == null && Cap() is { Worn: true, IsTurning: false } cap ? cap.Holdable : null;
+
+        /// <summary>What he'd act on <paramref name="target"/> with: the held item, or for a hook the cap off his head.
+        /// </summary>
+        private Holdable ItemFor(InteractionTarget target) =>
+            _hand.Held != null ? _hand.Held : target is HoldSpot ? WornCap() : null;
+
         /// <summary>Acts at once when the hand reaches; otherwise turns or walks up first.</summary>
         private void Reach(InteractionTarget target, Vector3 point, System.Action act)
         {
@@ -190,7 +209,8 @@ namespace Stasik.Player
             _movement.Approach(stand, Vector3.ProjectOnPlane(point - stand, Vector3.up), arrived =>
             {
                 // Still there and still something to do? Then do it (an item just out of reach hops into the hand).
-                if (arrived && target != null && target.isActiveAndEnabled && target.VerbFor(_hand.Held) != InteractVerb.None)
+                if (arrived && target != null && target.isActiveAndEnabled
+                    && target.VerbFor(ItemFor(target)) != InteractVerb.None)
                     act();
             });
         }
@@ -227,7 +247,6 @@ namespace Stasik.Player
 
         private void ChooseTarget()
         {
-            var held = _hand.Held;
             var root = transform.position;
             var facing = transform.forward;
             if (_camera != null)
@@ -240,10 +259,11 @@ namespace Stasik.Player
             {
                 if (target == null || target.transform.IsChildOf(transform))
                     continue; // the held item, the worn cap
-                var verb = target.VerbFor(held);
+                var item = ItemFor(target);
+                var verb = target.VerbFor(item);
                 if (verb == InteractVerb.None)
                     continue;
-                var point = ActionPoint(target, held);
+                var point = ActionPoint(target, item);
                 var flat = Vector3.ProjectOnPlane(point - root, Vector3.up);
                 var distance = flat.magnitude;
                 var height = point.y - root.y;
