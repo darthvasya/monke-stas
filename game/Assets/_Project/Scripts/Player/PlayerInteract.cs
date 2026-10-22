@@ -22,9 +22,15 @@ namespace Stasik.Player
         [SerializeField] private float _handSide = 0.14f;  // stand a bit left so the right hand is in line
         [SerializeField] private float _stickiness = 0.15f;
 
+        [Header("Sitting")]
+        [SerializeField] private Vector3 _sitHips = new(-0.135f, 0.33f, -0.22f); // SitIdle's hips in the root's frame
+        [SerializeField] private float _seatClearance = 0.07f;                  // the hips bone above the seat
+        [SerializeField] private Vector2 _sitCalm = new(-1.4f, 1.1f); // SitIdle's upright stretch, s (across its loop)
+
         private PlayerInput _input;
         private PlayerMovement _movement;
         private bool _locked;
+        private Sitting _sitting;
         private readonly RaycastHit[] _hits = new RaycastHit[16];
 
         /// <summary>What E acts on now (null + holding something = put it down); for a future prompt.</summary>
@@ -44,6 +50,8 @@ namespace Stasik.Player
 
         private void OnDisable()
         {
+            _sitting?.Abort();
+            _sitting = null;
             _movement.CancelApproach();
             SetLock(false);
             if (_hand != null)
@@ -57,10 +65,20 @@ namespace Stasik.Player
             // Standing still while the hand takes from or puts on something in the world; head moves don't stop him.
             SetLock(_hand.IsWorldMove);
 
-            if (!_hand.IsBusy && !_movement.IsApproaching)
+            if (_sitting != null)
+            {
+                // Seated: E or the stick gets him up; nothing else to pick meanwhile.
+                if (_sitting.Seated && (_input.InteractPressed || _input.Move.sqrMagnitude > 0.25f))
+                    _sitting.StandUp();
+                if (!_sitting.Tick(Time.deltaTime))
+                    _sitting = null;
+            }
+            else if (!_hand.IsBusy && !_movement.IsApproaching)
+            {
                 ChooseTarget();
+            }
 
-            if (_input.InteractPressed)
+            if (_sitting == null && _input.InteractPressed)
             {
                 if (_movement.IsApproaching)
                     _movement.CancelApproach();
@@ -84,6 +102,12 @@ namespace Stasik.Player
                     if (_hand.Held != null || !_hand.TryRunCustom(grip))
                         ToggleDoor(door, origin);
                 });
+                return;
+            }
+
+            if (Target is Seat seat)
+            {
+                SitOn(seat);
                 return;
             }
 
@@ -117,6 +141,23 @@ namespace Stasik.Player
                 return false;
             _movement.Approach(spot, door.FocusPoint - spot, _ => { });
             return true;
+        }
+
+        /// <summary>Walks to the seat's stand point, turns his back to it and sits down.</summary>
+        private void SitOn(Seat seat)
+        {
+            var stand = seat.StandPoint != null
+                ? seat.StandPoint.position
+                : seat.transform.position + seat.transform.forward * 0.5f;
+            _movement.Approach(stand, seat.transform.forward, arrived =>
+            {
+                if (!arrived || _sitting != null || !seat.IsFree)
+                    return;
+                var sitting = new Sitting(seat, transform, _movement, _hand.Animator, _sitHips, _seatClearance,
+                    _sitCalm);
+                if (sitting.TryStart())
+                    _sitting = sitting;
+            });
         }
 
         /// <summary>The cap in the hand, or the one on his head.</summary>

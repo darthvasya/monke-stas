@@ -119,6 +119,14 @@ namespace Stasik.Player
 
         private void Update()
         {
+            if (!_controller.enabled)
+            {
+                // Someone else moves him (sitting down on a chair).
+                _velocity = Vector3.zero;
+                Speed = 0f;
+                return;
+            }
+
             var input = Locked ? Vector2.zero : Vector2.ClampMagnitude(_input.Move, 1f);
             if ((_approaching || _faceDone != null) && input.magnitude > CancelInput)
                 CancelApproach();

@@ -166,8 +166,29 @@ namespace Stasik.EditorTools
             ("Door_Living", new Vector3(7.125f, 0f, 12.13f), 1.0f, 180f, Hinge.Left, DoorSwing.Inward),
         };
 
+        // Places to sit (Stasik.Interaction.Seat). The seat goes on the host's seat surface (found by a ray down the
+        // model), Side m to the sitter's right of the footprint centre, SitDepth m in from the host's front edge: the
+        // monkey's thighs are short, he sits on the edge with his legs dangling. The sitter faces the host's front.
+        // Stand: where he stands before sitting down and after getting up, just clear of the host's collider, at
+        // StandAngle from where the sitter faces (0 = in front, 90 = to his right: chairs at a table, the desk chair).
+        private const float SitDepth = 0.18f;
+        private const float StandClear = 0.42f; // from the host's collider: the player's radius + a bit
+
+        private static readonly (string Name, string Host, float Side, float StandAngle)[] Seats =
+        {
+            ("Seat_SofaLeft", "Sofa", -0.3f, 0f), // between the pillows
+            ("Seat_SofaRight", "Sofa", 0.3f, 0f),
+            ("Seat_ChairNE", "Chair_NE", 0f, 90f),
+            ("Seat_ChairNW", "Chair_NW", 0f, 90f),
+            ("Seat_ChairSW", "Chair_SW", 0f, 90f),
+            ("Seat_ChairSE", "Chair_SE", 0f, 90f),
+            ("Seat_StreamChair", "StreamChair", 0f, 90f),
+            ("Seat_Bench", "Bench", 0f, 0f),
+        };
+
         /// <summary>
-        /// The Interaction root (unscaled, not static, unlike the furniture): doors, hold spots and the items on them.
+        /// The Interaction root (unscaled, not static, unlike the furniture): doors, seats, hold spots and the items on
+        /// them.
         /// Run after Place() (spots name their furniture) and after the Player prefab build (it writes Cap.prefab).
         /// </summary>
         public static void PlaceInteraction()
@@ -178,6 +199,7 @@ namespace Stasik.EditorTools
             var items = new GameObject("Items").transform;
             items.SetParent(root, false);
             PlaceDoors(root);
+            PlaceSeats(root);
             foreach (var (name, host, position, yaw, kind, stand, start) in Spots)
             {
                 var spotGo = new GameObject(name);
@@ -262,6 +284,99 @@ namespace Stasik.EditorTools
 
                 go.AddComponent<Door>().Setup(hingeT, box, handleT, swing);
             }
+        }
+
+        private static void PlaceSeats(Transform root)
+        {
+            var seats = new GameObject("Seats").transform;
+            seats.SetParent(root, false);
+            foreach (var (name, hostName, side, standAngle) in Seats)
+            {
+                var host = GameObject.Find(hostName);
+                var yaw = YawOf(hostName);
+                if (host == null || yaw == null)
+                {
+                    Debug.LogWarning($"[Stasik] Seat {name}: no furniture {hostName}");
+                    continue;
+                }
+
+                var facing = Quaternion.Euler(0f, yaw.Value, 0f) * Vector3.back; // the host's front
+                var right = Vector3.Cross(Vector3.up, facing);
+                var collider = host.GetComponent<BoxCollider>();
+                var box = collider.bounds;
+                var middle = new Vector3(box.center.x, 0f, box.center.z) + right * side;
+                var point = Edge(collider, middle, facing) - facing * SitDepth;
+                var top = SeatTop(host, point);
+                if (top == null)
+                {
+                    Debug.LogWarning($"[Stasik] Seat {name}: no seat surface on {hostName}");
+                    continue;
+                }
+
+                var seatGo = new GameObject(name);
+                seatGo.transform.SetParent(seats, false);
+                seatGo.transform.SetPositionAndRotation(new Vector3(point.x, top.Value, point.z),
+                    Quaternion.LookRotation(facing));
+                var seat = seatGo.AddComponent<Seat>();
+                seat.Host = host;
+                var stand = new GameObject("Stand").transform;
+                stand.SetParent(seatGo.transform, false);
+                var away = Quaternion.Euler(0f, standAngle, 0f) * facing;
+                stand.position = Edge(collider, point, away) + away * StandClear;
+                seat.StandPoint = stand;
+            }
+        }
+
+        /// <summary>
+        /// Where the host's collider ends going from <paramref name="from"/> along <paramref name="direction"/>, on the
+        /// floor.
+        /// </summary>
+        private static Vector3 Edge(BoxCollider collider, Vector3 from, Vector3 direction)
+        {
+            var y = collider.bounds.min.y;
+            var inside = new Vector3(from.x, y + 0.2f, from.z);
+            var ray = new Ray(inside + direction * 5f, -direction);
+            var edge = collider.Raycast(ray, out var hit, 5f) ? hit.point : inside;
+            return new Vector3(edge.x, y, edge.z);
+        }
+
+        private static float? YawOf(string item)
+        {
+            foreach (var (_, items) in Layout)
+            {
+                foreach (var i in items)
+                {
+                    if (i.Name == item)
+                        return i.Yaw;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>The top of the host's meshes under <paramref name="point"/>, from below a backrest's top down.</summary>
+        private static float? SeatTop(GameObject host, Vector3 point)
+        {
+            var temp = new List<MeshCollider>();
+            foreach (var mf in host.GetComponentsInChildren<MeshFilter>())
+            {
+                var mc = mf.gameObject.AddComponent<MeshCollider>();
+                mc.sharedMesh = mf.sharedMesh;
+                temp.Add(mc);
+            }
+
+            Physics.SyncTransforms();
+            float? top = null;
+            // From under a backrest's top (the sofa's arms and backs are higher than any seat), down to the floor.
+            foreach (var hit in Physics.RaycastAll(point + Vector3.up * 0.7f, Vector3.down, 0.75f))
+            {
+                if (hit.collider is MeshCollider mc && temp.Contains(mc))
+                    top = Mathf.Max(top ?? hit.point.y, hit.point.y);
+            }
+
+            foreach (var mc in temp)
+                Object.DestroyImmediate(mc);
+            return top;
         }
 
         private static Transform MeshObject(string name, Transform parent, Mesh mesh, Material[] materials, Vector3 scale)

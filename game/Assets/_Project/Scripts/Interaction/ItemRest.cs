@@ -14,6 +14,7 @@ namespace Stasik.Interaction
         Turn,
         Open,
         Close,
+        Sit,
     }
 
     /// <summary>A pose relative to an object, editable in the inspector.</summary>
